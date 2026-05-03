@@ -247,7 +247,7 @@
     }
     .bar {
       flex: 1;
-      min-width: 2px;
+      min-width: 1px;
       border-radius: 2px;
       background: rgba(0, 0, 0, 0.06);
       transition: transform 120ms ease;
@@ -298,8 +298,11 @@
       header { margin-bottom: 32px; }
       .banner { padding: 20px; border-radius: 16px; }
       .banner-title { font-size: 18px; }
-      .card { padding: 16px 18px; border-radius: 14px; }
-      .card-meta { gap: 10px; }
+      .card { padding: 16px 14px; border-radius: 14px; }
+      .card-meta { gap: 10px; flex-wrap: wrap; row-gap: 4px; }
+      .bars { gap: 1px; }
+      .range-bar { gap: 8px; }
+      .range-pill { padding: 5px 10px; font-size: 11px; }
     }
   </style>
 </head>
