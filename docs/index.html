@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Autopilot status</title>
+  <meta name="description" content="Live status of Autopilot — app, site, backend, and AI companion." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23090909'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='-apple-system,system-ui,sans-serif' font-size='18' font-weight='700' fill='%23fff'%3EA%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0a0a0a;
+      --ink-soft: #525252;
+      --ink-mute: #a3a3a3;
+      --border: rgba(10, 10, 10, 0.08);
+      --glass: rgba(255, 255, 255, 0.55);
+      --glass-strong: rgba(255, 255, 255, 0.78);
+      --up: #059669;
+      --up-soft: #d1fae5;
+      --down: #dc2626;
+      --down-soft: #fee2e2;
+      --warn: #d97706;
+      --warn-soft: #fef3c7;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+      font-feature-settings: "ss01", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100svh;
+      overflow-x: clip;
+      letter-spacing: -0.01em;
+    }
+
+    .orbs {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(140px);
+    }
+    .orb-1 { right: -280px; top: -260px; width: 900px; height: 900px; background: rgba(99, 102, 241, 0.28); }
+    .orb-2 { left: -240px; top: 80px; width: 820px; height: 820px; background: rgba(59, 130, 246, 0.22); }
+    .orb-3 { right: -200px; top: 520px; width: 780px; height: 780px; background: rgba(168, 85, 247, 0.18); }
+    .orb-4 { left: -180px; top: 1000px; width: 800px; height: 800px; background: rgba(20, 184, 166, 0.16); }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 56px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .wordmark {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--glass-strong);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-soft);
+    }
+
+    /* Banner */
+    .banner {
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 32px rgba(15, 23, 42, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .banner-dot {
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ink-mute);
+      box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.04);
+    }
+    .banner-dot.up    { background: var(--up);   box-shadow: 0 0 0 6px rgba(5, 150, 105, 0.12); }
+    .banner-dot.warn  { background: var(--warn); box-shadow: 0 0 0 6px rgba(217, 119, 6, 0.12); }
+    .banner-dot.down  { background: var(--down); box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.12); }
+    .banner-text { flex: 1; min-width: 0; }
+    .banner-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .banner-sub {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+
+    /* Target cards */
+    .targets { display: grid; gap: 12px; }
+
+    .card {
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 18px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 4px 20px rgba(15, 23, 42, 0.04);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .card-name {
+      flex: 1;
+      min-width: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--ink-mute);
+      font-variant-numeric: tabular-nums;
+    }
+    .card-meta strong {
+      color: var(--ink-soft);
+      font-weight: 500;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--ink-soft);
+    }
+    .status-chip.up    { background: var(--up-soft);   color: var(--up); }
+    .status-chip.warn  { background: var(--warn-soft); color: var(--warn); }
+    .status-chip.down  { background: var(--down-soft); color: var(--down); }
+    .status-chip .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Bar chart */
+    .bars {
+      display: flex;
+      gap: 2px;
+      align-items: stretch;
+      height: 28px;
+    }
+    .bar {
+      flex: 1;
+      min-width: 2px;
+      border-radius: 2px;
+      background: rgba(0, 0, 0, 0.06);
+      transition: transform 120ms ease;
+    }
+    .bar.up    { background: var(--up); }
+    .bar.warn  { background: var(--warn); }
+    .bar.down  { background: var(--down); }
+    .bar:hover { transform: scaleY(1.1); }
+    .bars-foot {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--ink-mute);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--ink-mute);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      justify-content: space-between;
+    }
+    footer a {
+      color: var(--ink-soft);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    footer a:hover { border-bottom-color: var(--ink-soft); }
+
+    .empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--ink-mute);
+      font-size: 13px;
+    }
+
+    @media (max-width: 520px) {
+      main { padding: 32px 16px 56px; }
+      header { margin-bottom: 32px; }
+      .banner { padding: 20px; border-radius: 16px; }
+      .banner-title { font-size: 18px; }
+      .card { padding: 16px 18px; border-radius: 14px; }
+      .card-meta { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <main>
+    <header>
+      <span class="logo">A</span>
+      <span class="wordmark">Autopilot</span>
+      <span class="pill" style="margin-left:auto">Status</span>
+    </header>
+
+    <section class="banner" id="banner">
+      <span class="banner-dot" id="bannerDot"></span>
+      <div class="banner-text">
+        <div class="banner-title" id="bannerTitle">Loading…</div>
+        <div class="banner-sub" id="bannerSub">Fetching latest checks.</div>
+      </div>
+    </section>
+
+    <section class="targets" id="targets" aria-live="polite"></section>
+
+    <footer>
+      <span>Checks every 5 minutes</span>
+      <span>
+        <a href="https://github.com/thegeorgeadamson/AutopilotUptime" target="_blank" rel="noopener">View source</a>
+      </span>
+    </footer>
+  </main>
+
+  <script>
+    const BARS_COUNT = 80;
+
+    const fmtTime = (iso) => {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      if (sameDay) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    const fmtRel = (iso) => {
+      if (!iso) return 'never';
+      const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    };
+
+    const STATUS_LABEL = {
+      up: 'Operational',
+      warn: 'Degraded',
+      degraded: 'Degraded',
+      down: 'Down',
+    };
+
+    function statusClass(s) {
+      if (s === 'up') return 'up';
+      if (s === 'down') return 'down';
+      return 'warn';
+    }
+
+    function renderBars(history) {
+      const slice = (history ?? []).slice(-BARS_COUNT);
+      const padCount = Math.max(0, BARS_COUNT - slice.length);
+      const bars = [];
+      for (let i = 0; i < padCount; i++) {
+        bars.push('<span class="bar" title="No data"></span>');
+      }
+      for (const h of slice) {
+        const cls = statusClass(h.status);
+        const tip = `${fmtTime(h.t)} · ${STATUS_LABEL[h.status] ?? h.status} · ${h.code ?? '—'} · ${h.ms}ms`;
+        bars.push(`<span class="bar ${cls}" title="${tip}"></span>`);
+      }
+      const first = slice[0]?.t;
+      const last = slice.at(-1)?.t;
+      return `
+        <div class="bars">${bars.join('')}</div>
+        <div class="bars-foot">
+          <span>${first ? fmtRel(first) : ''}</span>
+          <span>${slice.length} checks</span>
+          <span>${last ? 'now' : ''}</span>
+        </div>
+      `;
+    }
+
+    function renderTarget(target, history) {
+      const cls = statusClass(target.status);
+      const label = STATUS_LABEL[target.status] ?? '—';
+      const latency = target.latencyMs != null ? target.latencyMs + ' ms' : '—';
+      const code = target.statusCode ?? (target.error ? target.error : '—');
+      return `
+        <article class="card">
+          <div class="card-head">
+            <span class="card-name">${target.name}</span>
+            <span class="status-chip ${cls}"><span class="dot"></span>${label}</span>
+          </div>
+          ${renderBars(history)}
+          <div class="card-meta" style="margin-top:12px;justify-content:space-between">
+            <span><strong>${code}</strong></span>
+            <span><strong>${latency}</strong></span>
+            <span>checked ${fmtRel(target.checkedAt)}</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderBanner(targets) {
+      const arr = Object.values(targets);
+      const downCount = arr.filter((t) => t.status === 'down').length;
+      const warnCount = arr.filter((t) => t.status === 'degraded' || t.status === 'warn').length;
+      const dot = document.getElementById('bannerDot');
+      const title = document.getElementById('bannerTitle');
+      const sub = document.getElementById('bannerSub');
+      dot.classList.remove('up', 'warn', 'down');
+      if (downCount > 0) {
+        dot.classList.add('down');
+        title.textContent = downCount === arr.length ? 'Major outage' : 'Service disruption';
+        sub.textContent = `${downCount} ${downCount === 1 ? 'service is' : 'services are'} down`;
+      } else if (warnCount > 0) {
+        dot.classList.add('warn');
+        title.textContent = 'Degraded performance';
+        sub.textContent = `${warnCount} ${warnCount === 1 ? 'service' : 'services'} responding unexpectedly`;
+      } else {
+        dot.classList.add('up');
+        title.textContent = 'All systems operational';
+        sub.textContent = `${arr.length} services checked`;
+      }
+    }
+
+    async function load() {
+      let current = null;
+      let history = {};
+      try {
+        const [c, h] = await Promise.all([
+          fetch('./data/current.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)),
+          fetch('./data/history.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : {})),
+        ]);
+        current = c;
+        history = h ?? {};
+      } catch (e) {
+        // first deploy — no data yet
+      }
+
+      const targetsEl = document.getElementById('targets');
+      if (!current || !current.targets) {
+        document.getElementById('bannerTitle').textContent = 'Awaiting first check';
+        document.getElementById('bannerSub').textContent = 'GitHub Actions runs every 5 minutes.';
+        document.getElementById('bannerDot').classList.add('warn');
+        targetsEl.innerHTML = '<div class="empty">No data yet. Once the first scheduled run completes, results will appear here.</div>';
+        return;
+      }
+
+      renderBanner(current.targets);
+      const html = Object.values(current.targets)
+        .map((t) => renderTarget(t, history[t.id]))
+        .join('');
+      targetsEl.innerHTML = html;
+    }
+
+    load();
+    // Light auto-refresh so the page stays current without a manual reload.
+    setInterval(load, 60_000);
+  </script>
+</body>
+</html>

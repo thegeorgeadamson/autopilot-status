@@ -1,0 +1,46 @@
+{
+  "checkedAt": "2026-05-03T07:24:18.823Z",
+  "targets": {
+    "app": {
+      "id": "app",
+      "name": "Autopilot App",
+      "url": "https://app.aplt.ai",
+      "ok": false,
+      "status": "down",
+      "statusCode": null,
+      "latencyMs": 75,
+      "checkedAt": "2026-05-03T07:24:16.701Z",
+      "error": "fetch failed"
+    },
+    "www": {
+      "id": "www",
+      "name": "aplt.ai",
+      "url": "https://www.aplt.ai",
+      "ok": true,
+      "status": "up",
+      "statusCode": 200,
+      "latencyMs": 2139,
+      "checkedAt": "2026-05-03T07:24:18.822Z"
+    },
+    "backend": {
+      "id": "backend",
+      "name": "Autopilot's Backend",
+      "url": "https://odoujghomokcenzuacdo.supabase.co/rest/v1/",
+      "ok": true,
+      "status": "up",
+      "statusCode": 401,
+      "latencyMs": 372,
+      "checkedAt": "2026-05-03T07:24:17.056Z"
+    },
+    "companion": {
+      "id": "companion",
+      "name": "Autopilot Companion",
+      "url": "https://api.anthropic.com",
+      "ok": true,
+      "status": "up",
+      "statusCode": 404,
+      "latencyMs": 253,
+      "checkedAt": "2026-05-03T07:24:16.937Z"
+    }
+  }
+}
