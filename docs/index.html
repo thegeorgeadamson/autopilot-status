@@ -4,19 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#eef0fb" />
+  <meta name="theme-color" content="#f6f7fb" />
   <title>Autopilot status</title>
-  <meta name="description" content="Live status of Autopilot — app, site, backend, and AI companion." />
+  <meta name="description" content="Live status for Autopilot app, site, backend, and AI companion." />
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <style>
     :root {
-      --bg: #ffffff;
+      --bg: #f6f7fb;
+      --surface: #ffffff;
       --ink: #0a0a0a;
       --ink-soft: #525252;
       --ink-mute: #a3a3a3;
       --border: rgba(10, 10, 10, 0.08);
-      --glass: rgba(255, 255, 255, 0.55);
-      --glass-strong: rgba(255, 255, 255, 0.78);
       --up: #059669;
       --up-soft: #d1fae5;
       --down: #dc2626;
@@ -30,11 +29,7 @@
     html { background: var(--bg); }
     body {
       background-color: var(--bg);
-      background-image:
-        radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.32), transparent 55%),
-        radial-gradient(circle at 0% 25%, rgba(59, 130, 246, 0.22), transparent 55%),
-        radial-gradient(circle at 100% 65%, rgba(168, 85, 247, 0.22), transparent 60%),
-        radial-gradient(circle at 0% 100%, rgba(20, 184, 166, 0.16), transparent 60%);
+      background-image: linear-gradient(180deg, #fbfcff 0%, #ffffff 44%, #f6f7fb 100%);
       background-attachment: fixed;
       background-repeat: no-repeat;
       color: var(--ink);
@@ -44,15 +39,15 @@
       -moz-osx-font-smoothing: grayscale;
       min-height: 100svh;
       overflow-x: clip;
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
     }
 
     main {
       position: relative;
       z-index: 1;
-      max-width: 760px;
+      max-width: 840px;
       margin: 0 auto;
-      padding: 56px 24px 80px;
+      padding: 48px 24px 72px;
     }
 
     /* Header */
@@ -60,7 +55,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 56px;
+      margin-bottom: 36px;
     }
     .brand {
       display: inline-flex;
@@ -85,7 +80,7 @@
     .wordmark {
       font-size: 18px;
       font-weight: 600;
-      letter-spacing: -0.02em;
+      letter-spacing: 0;
     }
     .pill {
       display: inline-flex;
@@ -94,9 +89,7 @@
       padding: 4px 10px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: var(--glass-strong);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: var(--surface);
       font-size: 12px;
       font-weight: 500;
       color: var(--ink-soft);
@@ -104,14 +97,12 @@
 
     /* Banner */
     .banner {
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      background: var(--glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 20px;
-      padding: 28px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 24px;
       margin-bottom: 16px;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 32px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
       display: flex;
       align-items: center;
       gap: 18px;
@@ -131,7 +122,7 @@
     .banner-title {
       font-size: 22px;
       font-weight: 600;
-      letter-spacing: -0.02em;
+      letter-spacing: 0;
       line-height: 1.2;
     }
     .banner-sub {
@@ -160,23 +151,21 @@
       align-items: center;
       gap: 2px;
       padding: 3px;
-      border-radius: 999px;
+      border-radius: 8px;
       border: 1px solid var(--border);
-      background: var(--glass-strong);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: var(--surface);
     }
     .range-pill {
       appearance: none;
       border: 0;
       background: transparent;
       padding: 5px 12px;
-      border-radius: 999px;
+      border-radius: 6px;
       font-size: 12px;
       font-weight: 500;
       color: var(--ink-soft);
       cursor: pointer;
-      letter-spacing: 0.01em;
+      letter-spacing: 0;
       transition: background 120ms ease, color 120ms ease;
       font-family: inherit;
     }
@@ -190,13 +179,11 @@
     .targets { display: grid; gap: 12px; }
 
     .card {
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      background: var(--glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
       padding: 20px 22px;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 4px 20px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
     }
     .card-head {
       display: flex;
@@ -209,7 +196,7 @@
       min-width: 0;
       font-size: 15px;
       font-weight: 600;
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
     }
     .card-meta {
       display: flex;
@@ -324,6 +311,12 @@
       border-bottom: 1px solid transparent;
     }
     footer a:hover { border-bottom-color: var(--ink-soft); }
+    .footer-links {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
 
     .empty {
       text-align: center;
@@ -335,9 +328,9 @@
     @media (max-width: 520px) {
       main { padding: 32px 16px 56px; }
       header { margin-bottom: 32px; }
-      .banner { padding: 20px; border-radius: 16px; }
+      .banner { padding: 20px; }
       .banner-title { font-size: 18px; }
-      .card { padding: 16px 14px; border-radius: 14px; }
+      .card { padding: 16px 14px; }
       .card-meta { gap: 10px; flex-wrap: wrap; row-gap: 4px; }
       .bars { gap: 1px; }
       .calendar { gap: 1px; height: 7px; margin-bottom: 14px; }
@@ -383,15 +376,14 @@
 
     <footer>
       <span>Checks every minute</span>
-      <span>
-        <a href="https://github.com/thegeorgeadamson/AutopilotUptime" target="_blank" rel="noopener">View source</a>
+      <span class="footer-links">
+        <a href="https://app.aplt.ai" target="_blank" rel="noopener">Open app</a>
+        <a href="https://github.com/thegeorgeadamson/autopilot-status" target="_blank" rel="noopener">View source</a>
       </span>
     </footer>
   </main>
 
   <script>
-    const BARS_COUNT = 80;
-
     const fmtTime = (iso) => {
       if (!iso) return '—';
       const d = new Date(iso);
@@ -563,10 +555,21 @@
         current?.targets &&
         Object.values(current.targets).every((t) => t.status === 'unknown');
 
-      if (!current || !current.targets || allUnknown) {
+      const bannerDot = document.getElementById('bannerDot');
+      bannerDot.classList.remove('up', 'warn', 'down');
+
+      if (!current || !current.targets) {
+        document.getElementById('bannerTitle').textContent = 'Status data unavailable';
+        document.getElementById('bannerSub').textContent = 'Could not reach the uptime API. Retrying every 30 seconds.';
+        bannerDot.classList.add('warn');
+        targetsEl.innerHTML = '<div class="empty">Latest status data could not be loaded.</div>';
+        return;
+      }
+
+      if (allUnknown) {
         document.getElementById('bannerTitle').textContent = 'Awaiting first check';
         document.getElementById('bannerSub').textContent = 'Cron fires every minute.';
-        document.getElementById('bannerDot').classList.add('warn');
+        bannerDot.classList.add('warn');
         targetsEl.innerHTML = '<div class="empty">No data yet. Results will appear here within a minute.</div>';
         return;
       }

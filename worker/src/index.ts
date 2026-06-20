@@ -16,7 +16,7 @@ const TARGETS: Target[] = [
   {
     id: "app",
     name: "Autopilot App",
-    url: "https://aplt.ai/dashboard",
+    url: "https://app.aplt.ai/dashboard",
     acceptStatus: [200, 401],
   },
   {
@@ -64,7 +64,7 @@ async function checkTarget(t: Target): Promise<CheckResult> {
       redirect: "follow",
       headers: {
         "User-Agent":
-          "AutopilotUptime/1.0 (+https://github.com/thegeorgeadamson/AutopilotUptime)",
+          "AutopilotUptime/1.0 (+https://github.com/thegeorgeadamson/autopilot-status)",
       },
     });
     const latencyMs = Date.now() - start;

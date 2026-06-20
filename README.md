@@ -7,7 +7,8 @@ GitHub Pages + Cloudflare so it stays up even when Vercel or Supabase don't.
 
 - **`worker/`** — a Cloudflare Worker that runs on a 1-minute cron, pings
   each target, and writes results to a Cloudflare D1 database. Exposes
-  `/current` and `/history` JSON endpoints at `https://uptime-api.aplt.ai`.
+  `/current`, `/series`, and `/calendar` JSON endpoints at
+  `https://uptime-api.aplt.ai`.
 - **`docs/`** — a static page (vanilla HTML/CSS/JS) served by GitHub Pages
   at `https://status.aplt.ai`. Fetches the Worker's JSON every 30 s.
 
@@ -18,7 +19,7 @@ running checks.
 
 | Target               | URL                                                       |
 | -------------------- | --------------------------------------------------------- |
-| Autopilot App        | https://aplt.ai/dashboard                                 |
+| Autopilot App        | https://app.aplt.ai/dashboard                             |
 | aplt.ai              | https://www.aplt.ai                                       |
 | Autopilot's Backend  | Supabase REST endpoint                                    |
 | Autopilot Companion  | Anthropic API                                             |
