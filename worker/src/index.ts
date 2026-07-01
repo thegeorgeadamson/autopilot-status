@@ -1,7 +1,7 @@
 interface Env {
   DB: D1Database;
   // Optional — set via `wrangler secret put DISCORD_WEBHOOK_URL`.
-  // When present, the Worker posts to it on any up<->down transition.
+  // When present, the Worker posts to it on sustained up<->down transitions.
   DISCORD_WEBHOOK_URL?: string;
 }
 
@@ -9,6 +9,8 @@ type Target = {
   id: string;
   name: string;
   url: string;
+  method?: "GET" | "HEAD";
+  redirect?: "follow" | "manual";
   acceptStatus?: number[];
 };
 
@@ -16,8 +18,10 @@ const TARGETS: Target[] = [
   {
     id: "app",
     name: "Autopilot App",
-    url: "https://app.aplt.ai/dashboard",
-    acceptStatus: [200, 401],
+    url: "https://app.aplt.ai/api/health",
+    method: "HEAD",
+    redirect: "manual",
+    acceptStatus: [204],
   },
   {
     id: "www",
@@ -40,6 +44,7 @@ const TARGETS: Target[] = [
 ];
 
 const TIMEOUT_MS = 10_000;
+const CONSECUTIVE_FAILURES_TO_ALERT = 3;
 
 type CheckResult = {
   id: string;
@@ -53,15 +58,21 @@ type CheckResult = {
   checkedAt: string;
 };
 
+type AlertTransition = {
+  result: CheckResult;
+  recovered: boolean;
+  failureStreak: number;
+};
+
 async function checkTarget(t: Target): Promise<CheckResult> {
   const start = Date.now();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(t.url, {
-      method: "GET",
+      method: t.method ?? "GET",
       signal: ctrl.signal,
-      redirect: "follow",
+      redirect: t.redirect ?? "follow",
       headers: {
         "User-Agent":
           "AutopilotUptime/1.0 (+https://github.com/thegeorgeadamson/autopilot-status)",
@@ -99,19 +110,51 @@ async function checkTarget(t: Target): Promise<CheckResult> {
   }
 }
 
+async function getPreviousFailureStreaks(env: Env): Promise<Map<string, number>> {
+  const targetIds = TARGETS.map((t) => `'${t.id.replaceAll("'", "''")}'`).join(", ");
+  const { results } = await env.DB.prepare(
+    `SELECT target_id, ok, rn
+     FROM (
+       SELECT
+         target_id,
+         ok,
+         ROW_NUMBER() OVER (
+           PARTITION BY target_id
+           ORDER BY checked_at DESC, id DESC
+         ) AS rn
+       FROM checks
+       WHERE target_id IN (${targetIds})
+     )
+     WHERE rn <= ?`
+  )
+    .bind(CONSECUTIVE_FAILURES_TO_ALERT)
+    .all<{ target_id: string; ok: number; rn: number }>();
+
+  const byTarget = new Map<string, Array<{ ok: number; rn: number }>>();
+  for (const row of results) {
+    const rows = byTarget.get(row.target_id) ?? [];
+    rows.push(row);
+    byTarget.set(row.target_id, rows);
+  }
+
+  const streaks = new Map<string, number>();
+  for (const [targetId, rows] of byTarget) {
+    rows.sort((a, b) => a.rn - b.rn);
+    let streak = 0;
+    for (const row of rows) {
+      if (row.ok) break;
+      streak += 1;
+    }
+    streaks.set(targetId, streak);
+  }
+
+  return streaks;
+}
+
 async function runChecks(env: Env): Promise<CheckResult[]> {
-  // Snapshot the previous state per target BEFORE inserting new rows so
-  // we can detect up<->down transitions for alerting.
-  const { results: prevRows } = await env.DB.prepare(
-    `SELECT c.target_id, c.ok
-     FROM checks c
-     INNER JOIN (
-       SELECT target_id, MAX(id) AS max_id FROM checks GROUP BY target_id
-     ) m ON m.target_id = c.target_id AND m.max_id = c.id`
-  ).all<{ target_id: string; ok: number }>();
-  const prevByTarget = new Map<string, boolean>(
-    prevRows.map((r) => [r.target_id, !!r.ok])
-  );
+  // Snapshot recent history BEFORE inserting new rows so Discord alerts only
+  // fire after a sustained outage, while the public page still shows raw data.
+  const previousFailureStreaks = await getPreviousFailureStreaks(env);
 
   const results = await Promise.all(TARGETS.map(checkTarget));
 
@@ -132,31 +175,95 @@ async function runChecks(env: Env): Promise<CheckResult[]> {
   await env.DB.batch(stmts);
 
   if (env.DISCORD_WEBHOOK_URL) {
-    const transitions = results.flatMap((r) => {
-      const prev = prevByTarget.get(r.id);
-      // Skip first-ever check (nothing to compare against). Otherwise
-      // alert on any change to the boolean ok flag.
-      if (prev === undefined || prev === r.ok) return [];
-      return [{ result: r, recovered: r.ok }];
+    const transitions = results.flatMap<AlertTransition>((r) => {
+      const previousFailureStreak = previousFailureStreaks.get(r.id) ?? 0;
+      if (!r.ok) {
+        const failureStreak = previousFailureStreak + 1;
+        if (failureStreak === CONSECUTIVE_FAILURES_TO_ALERT) {
+          return [{ result: r, recovered: false, failureStreak }];
+        }
+        return [];
+      }
+      if (previousFailureStreak >= CONSECUTIVE_FAILURES_TO_ALERT) {
+        return [{ result: r, recovered: true, failureStreak: 0 }];
+      }
+      return [];
     });
     if (transitions.length > 0) {
-      await postDiscordAlerts(env.DISCORD_WEBHOOK_URL, transitions);
+      await postDiscordAlerts(env.DISCORD_WEBHOOK_URL, transitions, results);
     }
   }
 
   return results;
 }
 
+function summarizeSnapshot(results: CheckResult[]): string {
+  return results
+    .map((r) => {
+      const state = r.ok ? "OK" : "FAIL";
+      const detail = r.statusCode != null ? `HTTP ${r.statusCode}` : (r.error ?? "no response");
+      return `${state} ${r.name}: ${detail}, ${r.latencyMs}ms`;
+    })
+    .join("\n");
+}
+
+function describeAlertContext(
+  transition: AlertTransition,
+  results: CheckResult[]
+): string {
+  const { result, recovered } = transition;
+  const byId = new Map(results.map((r) => [r.id, r]));
+  const failing = results.filter((r) => !r.ok);
+
+  if (recovered) {
+    if (failing.length === 0) {
+      return "All monitored targets are passing again.";
+    }
+    return `Recovered, but still failing: ${failing.map((r) => r.name).join(", ")}.`;
+  }
+
+  const backendOk = byId.get("backend")?.ok;
+  const appOk = byId.get("app")?.ok;
+
+  if (result.id === "app") {
+    if (backendOk) {
+      return "Supabase is passing, so this points more toward the app edge, Vercel routing, middleware, or runtime.";
+    }
+    return "Supabase is also failing, so this may be broader than the app runtime.";
+  }
+
+  if (result.id === "backend") {
+    if (appOk) {
+      return "The app edge is reachable, but Supabase is failing; likely backend dependency impact.";
+    }
+    return "The app check is also failing, so customer impact may be broad.";
+  }
+
+  if (result.id === "companion") {
+    return "The app and backend checks show whether this is isolated to AI companion dependency access.";
+  }
+
+  if (result.id === "www") {
+    return "This affects the public marketing site separately from the app and backend checks.";
+  }
+
+  return "Check the status snapshot below to see which other targets are affected.";
+}
+
 async function postDiscordAlerts(
   webhookUrl: string,
-  transitions: Array<{ result: CheckResult; recovered: boolean }>
+  transitions: AlertTransition[],
+  results: CheckResult[]
 ) {
   // Discord allows up to 10 embeds per message — well within for 4 targets.
-  const embeds = transitions.map(({ result, recovered }) => {
+  const snapshot = summarizeSnapshot(results);
+  const embeds = transitions.map((transition) => {
+    const { result, recovered, failureStreak } = transition;
     const detailLines: string[] = [];
     if (result.statusCode != null) detailLines.push(`HTTP ${result.statusCode}`);
     if (result.error) detailLines.push(result.error);
     detailLines.push(`${result.latencyMs}ms`);
+    if (!recovered) detailLines.push(`${failureStreak} consecutive failed checks`);
     return {
       title: recovered
         ? `🟢 ${result.name} recovered`
@@ -166,6 +273,18 @@ async function postDiscordAlerts(
       color: recovered ? 0x57f287 : 0xed4245,
       timestamp: result.checkedAt,
       footer: { text: result.url },
+      fields: [
+        {
+          name: recovered ? "Recovery context" : "Likely signal",
+          value: describeAlertContext(transition, results),
+          inline: false,
+        },
+        {
+          name: "Current snapshot",
+          value: snapshot,
+          inline: false,
+        },
+      ],
     };
   });
 

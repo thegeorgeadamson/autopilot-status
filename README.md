@@ -19,7 +19,7 @@ running checks.
 
 | Target               | URL                                                       |
 | -------------------- | --------------------------------------------------------- |
-| Autopilot App        | https://app.aplt.ai/dashboard                             |
+| Autopilot App        | https://app.aplt.ai/api/health                            |
 | aplt.ai              | https://www.aplt.ai                                       |
 | Autopilot's Backend  | Supabase REST endpoint                                    |
 | Autopilot Companion  | Anthropic API                                             |
@@ -52,6 +52,17 @@ Custom domain `status.aplt.ai` is configured in the GitHub Pages settings
 
 ## Alerting
 
-Cloudflare's Workers logs surface failures, but there's no email-on-down
-yet. Add a Worker step to POST to a webhook (Slack, Resend, etc.) when a
-target moves from `up → down` if you want active alerting.
+Set `DISCORD_WEBHOOK_URL` as a Worker secret to post Discord alerts when a
+target changes state. Down alerts require 3 consecutive failed 1-minute checks
+before posting, which filters out one-off route, network, and cold-start blips.
+Recovery alerts post after a target that had reached that failure threshold
+returns to a passing check.
+
+Discord alerts include a current target snapshot and a short likely-cause hint.
+For example, if the app check fails while Supabase is still passing, the alert
+points toward app/Vercel/routing/runtime; if the backend check fails while the
+app edge is reachable, it points toward Supabase dependency impact.
+
+The app check uses `HEAD https://app.aplt.ai/api/health` with redirects handled
+manually. That route is public and returns `204 No Content`, so auth redirects
+now count as failures instead of being treated as a healthy app response.
