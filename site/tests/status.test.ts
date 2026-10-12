@@ -85,3 +85,30 @@ test("invalid metrics cannot enter chart formatting", () => {
   assert.throws(() => parseSnapshot({ ...base, checkedAt: "bad" }));
   assert.equal(parseSnapshot(base), base);
 });
+
+import { smoothTrend } from "../lib/status.ts";
+
+test("trend reduces noise without altering raw readings or bridging gaps and outages", () => {
+  const make = (ms: number | null, up = 60) => ({
+    start: 0,
+    total: ms === null ? 0 : 60,
+    up: ms === null ? 0 : up,
+    ms,
+  });
+  const readings = [
+    make(80),
+    make(140),
+    make(80),
+    make(140),
+    make(null),
+    make(10000, 0),
+    make(110),
+  ];
+  const original = JSON.stringify(readings),
+    trend = smoothTrend(readings);
+  assert.ok(trend[1]! < 140 && trend[1]! > 80);
+  assert.equal(trend[4], null);
+  assert.equal(trend[5], 10000);
+  assert.equal(trend[6], 110);
+  assert.equal(JSON.stringify(readings), original);
+});

@@ -48,7 +48,11 @@ were changed to local aliases. The upstream MIT license is retained in that dire
 See https://evilcharts.com/docs/echarts/components and its line-chart documentation.
 The performance component supplies a chartOptions override for gaps, affected periods,
 units and tooltip content through the library's supported option escape hatch.
-Lines use monotone smoothing and preserve unknown gaps.
+Lines use a seven-period triangular weighted visual trend with monotone curves.
+Unavailable samples retain their recorded values, and smoothing does not cross unknown
+or unavailable boundaries. Tooltips, keyboard inspection and summary metrics use the
+original buckets. The page has a plain white background; local scenario controls remain
+compact and explicitly labelled simulated data.
 Large timeout spikes use a clearly labelled compressed display scale; tooltips and
 summary values retain real milliseconds and recorded-check availability.
 

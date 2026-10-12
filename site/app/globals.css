@@ -50,7 +50,7 @@
 @layer base {
   body {
     margin: 0;
-    background: #f3f3f5;
+    background: #fff;
     color: var(--foreground);
     font-family: Geist, system-ui, sans-serif;
   }
@@ -75,11 +75,11 @@
 }
 .status-shell {
   max-width: 1120px;
-  margin: 28px auto;
+  margin: 0 auto;
   background: white;
-  border-radius: 24px;
+  border-radius: 0;
   overflow: hidden;
-  min-height: calc(100vh - 56px);
+  min-height: 100vh;
 }
 .status-header {
   display: flex;
@@ -191,8 +191,8 @@
 }
 @media (max-width: 1152px) {
   .status-shell {
-    margin: 16px;
-    min-height: calc(100vh - 32px);
+    margin: 0 auto;
+    min-height: 100vh;
   }
 }
 @media (max-width: 1023px) {

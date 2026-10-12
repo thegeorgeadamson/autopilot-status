@@ -193,12 +193,9 @@ export function StatusPage() {
           </div>
           {demo && (
             <aside className="demo-preview">
-              <HeaderMetric
-                tone="sky"
-                label="Local preview · simulated data"
-                value="40 days of example history"
-                detail="Includes healthy periods, outages and gaps. This is not live service status."
-              />
+              <p className="text-[11px] text-muted-foreground">
+                Local preview · simulated data
+              </p>
               <div className="demo-picker">
                 <ChartMetricTabs
                   value={scenario}
@@ -289,7 +286,7 @@ export function StatusPage() {
                           Response time
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          Average for the selected period
+                          Smoothed trend · hover for recorded values
                         </p>
                       </div>
                       <Badge

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { TooltipSurface } from "@/components/ui/tooltip-surface";
 import { MarkAreaComponent } from "echarts/components";
 import * as echarts from "echarts/core";
-import type { Bucket } from "@/lib/status";
+import { smoothTrend, type Bucket } from "@/lib/status";
 echarts.use([MarkAreaComponent]);
 const config = {
   response: { label: "Response time", colors: { light: ["#61b99c"] } },
@@ -35,9 +35,10 @@ export default function PerformanceChart({
     const compressed = ceiling > 1000,
       forward = (ms: number) => (compressed ? Math.log1p(ms / 100) : ms),
       back = (v: number) => (compressed ? Math.expm1(v) * 100 : v);
-    const data = buckets.map((b) => ({
+    const trend = smoothTrend(buckets);
+    const data = buckets.map((b, index) => ({
       time: String(b.start),
-      response: b.ms === null ? null : forward(b.ms),
+      response: trend[index] === null ? null : forward(trend[index]!),
     }));
     const affected = buckets.map((b, i) =>
       b.total &&
