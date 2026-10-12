@@ -1,68 +1,19 @@
-# Autopilot Uptime
+# Autopilot Uptime — retired
 
-Independent status page for [Autopilot](https://aplt.ai). Hosted entirely on
-GitHub Pages + Cloudflare so it stays up even when Vercel or Supabase don't.
+The old Cloudflare uptime monitor was retired on 12 October 2026 at the owner’s request.
+It monitored outdated Supabase and Companion targets and its once-a-minute history query
+was repeatedly exhausting the Cloudflare D1 daily read allowance.
 
-## Architecture
+The live Worker has no cron triggers, custom domains or zone routes. Both its production
+workers.dev URL and preview URLs are disabled. The D1 database and Worker history are
+retained, with no scheduled or public invocation path.
 
-- **`worker/`** — a Cloudflare Worker that runs on a 1-minute cron, pings
-  each target, and writes results to a Cloudflare D1 database. Exposes
-  `/current`, `/series`, and `/calendar` JSON endpoints at
-  `https://uptime-api.aplt.ai`.
-- **`docs/`** — a static page (vanilla HTML/CSS/JS) served by GitHub Pages
-  at `https://status.aplt.ai`. Fetches the Worker's JSON every 30 s.
+The public page at https://status.aplt.ai now displays a retirement notice and makes no
+requests to the old API. AWS production health monitoring is separate and remains active.
 
-There is no GitHub Actions workflow — the Worker is the only thing
-running checks.
+Do not redeploy historical configuration or restore the old cron/API route. The checked-in
+configuration keeps those invocation paths disabled. Any replacement public status page
+should reflect the current AWS architecture and use bounded queries.
 
-## What's monitored
-
-| Target               | URL                                                       |
-| -------------------- | --------------------------------------------------------- |
-| Autopilot App        | https://app.aplt.ai/api/health                            |
-| aplt.ai              | https://www.aplt.ai                                       |
-| Autopilot's Backend  | Supabase REST endpoint                                    |
-| Autopilot Companion  | Anthropic API                                             |
-
-Edit `worker/src/index.ts` (`TARGETS`) and re-deploy to change them.
-
-## Deploying the worker
-
-```bash
-cd worker
-export CLOUDFLARE_API_TOKEN="$(cat ~/.cloudflare-uptime-token)"
-npx wrangler deploy
-```
-
-To apply schema changes:
-
-```bash
-npx wrangler d1 execute autopilot-uptime --remote --file=migrations/0001_initial.sql
-```
-
-## Page
-
-The page is committed under `docs/` and served by GitHub Pages from the
-`/docs` folder on `main`. Editing `docs/index.html` and pushing is enough
-— Pages rebuilds automatically.
-
-Custom domain `status.aplt.ai` is configured in the GitHub Pages settings
-+ a CNAME record on the aplt.ai Cloudflare zone pointing at
-`thegeorgeadamson.github.io`.
-
-## Alerting
-
-Set `DISCORD_WEBHOOK_URL` as a Worker secret to post Discord alerts when a
-target changes state. Down alerts require 3 consecutive failed 1-minute checks
-before posting, which filters out one-off route, network, and cold-start blips.
-Recovery alerts post after a target that had reached that failure threshold
-returns to a passing check.
-
-Discord alerts include a current target snapshot and a short likely-cause hint.
-For example, if the app check fails while Supabase is still passing, the alert
-points toward app/Vercel/routing/runtime; if the backend check fails while the
-app edge is reachable, it points toward Supabase dependency impact.
-
-The app check uses `HEAD https://app.aplt.ai/api/health` with redirects handled
-manually. That route is public and returns `204 No Content`, so auth redirects
-now count as failures instead of being treated as a healthy app response.
+Historical Worker code and migrations remain under `worker/` for reference. The retained
+D1 database is `autopilot-uptime` (`65b5ad4b-5b4d-4347-abdf-195863de72e5`).

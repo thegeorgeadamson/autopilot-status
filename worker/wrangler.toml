@@ -3,15 +3,12 @@ main = "src/index.ts"
 compatibility_date = "2026-01-15"
 workers_dev = false
 
-# Custom subdomain. Wrangler creates the DNS record on the aplt.ai
-# Cloudflare zone automatically when you deploy.
-routes = [
-  { pattern = "uptime-api.aplt.ai", custom_domain = true }
-]
+# Retired on 2026-10-12. Keep all invocation paths disabled.
+preview_urls = false
+routes = []
 
-# 1-minute cron — Cloudflare's minimum and most reliable schedule.
 [triggers]
-crons = ["* * * * *"]
+crons = []
 
 # D1 database — bound as `env.DB` in the Worker.
 [[d1_databases]]
