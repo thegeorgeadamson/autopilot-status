@@ -54,7 +54,18 @@ export function makeDemo(
       });
     }
   });
+  const byDay = new Map<string, Hour>();
+  for (const row of hourly) {
+    const bucket = Math.floor(row.bucket / 1440) * 1440;
+    const key = `${row.target_id}:${bucket}`;
+    const day = byDay.get(key) ?? { target_id: row.target_id, bucket, total: 0, up: 0, latency_sum: 0 };
+    day.total += row.total;
+    day.up += row.up;
+    day.latency_sum += row.latency_sum;
+    byDay.set(key, day);
+  }
   return {
+    daily: [...byDay.values()],
     checkedAt: new Date(now).toISOString(),
     historyUpdatedAt: new Date(now).toISOString(),
     hourly,

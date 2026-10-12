@@ -25,6 +25,7 @@ const ranges = [
   { hours: 24, label: "24 hours" },
   { hours: 168, label: "7 days" },
   { hours: 720, label: "30 days" },
+  { hours: 2160, label: "90 days" },
 ];
 const scenarios = [
   { id: "mixed", label: "Recovered outages" },
@@ -61,7 +62,7 @@ export function StatusPage() {
     setYear(new Date().getFullYear());
     if (local) {
       setDemo(true);
-      setHours(960);
+      setHours(720);
       return;
     }
     const load = async () => {
@@ -206,10 +207,7 @@ export function StatusPage() {
                 label="History range"
                 value={String(hours)}
                 onChange={(v) => setHours(Number(v))}
-                options={[
-                  ...ranges,
-                  ...(demo ? [{ hours: 960, label: "40 days" }] : []),
-                ].map((r) => ({ value: String(r.hours), label: r.label }))}
+                options={ranges.map((r) => ({ value: String(r.hours), label: r.label }))}
               />
             }
           >

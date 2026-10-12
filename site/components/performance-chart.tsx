@@ -53,6 +53,7 @@ export default function PerformanceChart({
       if (!b) return "";
       const date = new Date(b.start * 60000),
         label = date.toLocaleDateString(undefined, {
+          timeZone: hours === 2160 ? "UTC" : undefined,
           weekday: "long",
           day: "numeric",
           month: "long",
@@ -71,7 +72,7 @@ export default function PerformanceChart({
               : "No data for this period"}
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {time} · {hours >= 720 ? 8 : hours === 168 ? 2 : 1}-hour period
+            {hours === 2160 ? "Daily average · UTC day" : `${time} · ${hours >= 720 ? 8 : hours === 168 ? 2 : 1}-hour period`}
           </p>
         </TooltipSurface>,
       );
@@ -107,6 +108,7 @@ export default function PerformanceChart({
                   minute: "2-digit",
                 })
               : new Date(Number(v) * 60000).toLocaleDateString(undefined, {
+                  timeZone: hours === 2160 ? "UTC" : undefined,
                   day: "numeric",
                   month: "short",
                 }),

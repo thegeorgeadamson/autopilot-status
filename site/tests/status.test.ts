@@ -85,3 +85,19 @@ test("invalid metrics cannot enter chart formatting", () => {
   assert.throws(() => parseSnapshot({ ...base, checkedAt: "bad" }));
   assert.equal(parseSnapshot(base), base);
 });
+
+test("90 days uses daily summaries once, with missing days and weighted metrics", () => {
+  const today = Math.floor(now / 86400000) * 1440;
+  const row = (bucket: number, total: number, up: number, latency_sum: number) => ({target_id: "app", bucket, total, up, latency_sum});
+  const snapshot = parseSnapshot({...base,
+    hourly: [row(today, 60, 60, 600000)],
+    daily: [row(today - 90 * 1440, 100, 0, 100000), row(today - 89 * 1440, 60, 30, 6000), row(today, 20, 20, 20000)],
+  });
+  const buckets = aggregate(snapshot, "app", 2160, now);
+  assert.equal(buckets.length, 90);
+  assert.equal(buckets[0].ms, 100);
+  assert.equal(buckets[1].ms, null);
+  assert.equal(buckets.at(-1)!.ms, 1000);
+  assert.deepEqual(summarize(buckets), {total: 80, availability: 62.5, ms: 325});
+  assert.throws(() => parseSnapshot({...base, daily: [row(today, 1, 2, 0)]}));
+});

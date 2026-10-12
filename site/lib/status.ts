@@ -21,6 +21,7 @@ export type Snapshot = {
   historyUpdatedAt: string;
   targets: Current[];
   hourly: Hour[];
+  daily?: Hour[];
 };
 export type Bucket = {
   start: number;
@@ -36,7 +37,8 @@ export function parseSnapshot(value: unknown): Snapshot {
     !Number.isFinite(Date.parse(s.historyUpdatedAt)) ||
     !Array.isArray(s.targets) ||
     !Array.isArray(s.hourly) ||
-    s.hourly.length > 10000
+    s.hourly.length > 10000 ||
+    (s.daily !== undefined && (!Array.isArray(s.daily) || s.daily.length > 600))
   )
     throw Error("Invalid status");
   if (
@@ -47,7 +49,7 @@ export function parseSnapshot(value: unknown): Snapshot {
         !Number.isFinite(r.minute) ||
         ![0, 1].includes(r.ok),
     ) ||
-    s.hourly.some(
+    [...s.hourly, ...(s.daily ?? [])].some(
       (r) =>
         !r ||
         typeof r.target_id !== "string" ||
@@ -67,22 +69,23 @@ export function aggregate(
   hours: number,
   now: number,
 ): Bucket[] {
-  const end =
-    Math.floor((snapshot ? Date.parse(snapshot.checkedAt) : now) / 3600000) *
-    60;
-  const group = hours >= 720 ? 8 : hours === 168 ? 2 : 1;
+  const daily = hours === 2160;
+  const step = daily ? 1440 : 60;
+  const end = Math.floor((snapshot ? Date.parse(snapshot.checkedAt) : now) / (step * 60000)) * step;
+  const group = daily ? 1 : hours >= 720 ? 8 : hours === 168 ? 2 : 1;
+  const periods = daily ? 90 : hours / group;
   const byHour = new Map(
-    (snapshot?.hourly ?? [])
+    (daily ? snapshot?.daily ?? [] : snapshot?.hourly ?? [])
       .filter((r) => r.target_id === id)
       .map((r) => [r.bucket, r]),
   );
-  return Array.from({ length: hours / group }, (_, i) => {
-    const start = end - (hours - group) * 60 + i * group * 60;
+  return Array.from({ length: periods }, (_, i) => {
+    const start = end - (periods - 1) * group * step + i * group * step;
     let total = 0,
       up = 0,
       latency = 0;
     for (let j = 0; j < group; j++) {
-      const r = byHour.get(start + j * 60);
+      const r = byHour.get(start + j * step);
       if (r) {
         total += r.total;
         up += r.up;

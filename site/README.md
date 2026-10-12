@@ -65,3 +65,9 @@ site at `6f53433913050036f5544bc97663810eae1cca2c`. It retains the brand, centre
 Docs/Changelog/Legal navigation, Open app button, sticky glass treatment and mobile
 menu. Documentation links are absolute; article search and theme switching remain
 on the docs site. The status page stays in light mode.
+
+The history picker offers 24 hours, 7 days, 30 days and 90 days. The first three
+use hourly summaries; 90 days uses the API's existing daily summaries (UTC days),
+with weighted latency and availability. Missing days stay empty. This requires no
+Worker change or additional D1 queries. The local demo still contains 40 days of
+simulated observations, leaving the older portion of the 90-day view empty.
