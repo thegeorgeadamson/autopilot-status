@@ -113,7 +113,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname !== '/status') return json({ error: 'Not found' }, 404);
     if (env.MONITOR_START_AT && Date.now() < Date.parse(env.MONITOR_START_AT)) {
-      return json({ error: 'Monitoring restarts after the previous daily allowance resets', startsAt: env.MONITOR_START_AT }, 503);
+      return json({ error: 'Status updates are temporarily unavailable', startsAt: env.MONITOR_START_AT }, 503);
     }
     // Canonical key ignores arbitrary query strings; all viewers share one snapshot.
     const key = new Request(`${url.origin}/status`, { method: 'GET' });
