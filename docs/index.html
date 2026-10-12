@@ -1,28 +1,64 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Status monitor retired — Autopilot</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <style>
-    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #101817; color: #edf4f2; }
-    main { max-width: 36rem; padding: 3rem 1.5rem; }
-    .brand { color: #83cbb5; font-weight: 650; letter-spacing: .03em; }
-    h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.1; margin: 1.5rem 0; }
-    p { line-height: 1.65; color: #bfceca; }
-    a { display: inline-block; margin-top: 1rem; color: #101817; background: #83cbb5; padding: .8rem 1.2rem; border-radius: .6rem; text-decoration: none; font-weight: 650; }
-    .date { font-size: .875rem; margin-top: 2rem; }
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101817"><title>Autopilot service status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#101817;color:#edf4f2}*{box-sizing:border-box}body{margin:0}main{max-width:1040px;margin:auto;padding:56px 24px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:44px}.brand{font-size:20px;font-weight:700;color:#83cbb5}a{color:#83cbb5;text-decoration:none}h1{font-size:clamp(32px,5vw,48px);letter-spacing:-.04em;margin:0 0 14px}p{color:#b4c6bf;line-height:1.6}#summary{border:1px solid #344c43;background:#182b23;border-radius:16px;padding:28px;margin-bottom:30px}#summary.unknown{background:#202627;border-color:#485253}#summary.down{background:#302521;border-color:#775045}#updated{font-size:14px;margin:0}.controls{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}.controls h2{font-size:18px;margin:0}nav{display:flex;gap:5px;padding:4px;background:#1c2522;border-radius:10px}button{font:inherit;color:#b4c6bf;background:transparent;border:0;padding:8px 12px;border-radius:7px;cursor:pointer}button[aria-pressed=true]{color:#101817;background:#83cbb5}button:focus-visible,a:focus-visible{outline:2px solid #edf4f2;outline-offset:4px}.service{background:#19231f;border:1px solid #2b3a33;border-radius:14px;padding:22px;margin-bottom:16px}.service-head{display:flex;justify-content:space-between;align-items:center;gap:14px}.service h3{margin:0;font-size:18px}.badge{font-size:13px;display:flex;align-items:center;gap:8px}.dot{height:8px;width:8px;border-radius:50%;background:#87908d}.up .dot{background:#83cbb5}.down .dot{background:#e6a188}.detail{font-size:13px;color:#b4c6bf;margin:8px 0 18px}.bars{display:flex;gap:3px;height:36px}.bar{flex:1;min-width:0;border-radius:3px;background:#37403c}.bar.up{background:#83cbb5}.bar.down{background:#d18875}.bar.partial{background:#bbac76}.bar.gap{opacity:.45}.axis{display:flex;justify-content:space-between;font-size:12px;color:#91a69c;margin:8px 0 20px}.calendar{display:grid;grid-template-columns:repeat(45,1fr);gap:3px}.day{aspect-ratio:1;border-radius:2px;background:#37403c}.day.up{background:#83cbb5}.day.down{background:#d18875}.day.partial{background:#bbac76}.day.gap{opacity:.45}.note{font-size:13px;margin-top:26px}.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#b4c6bf}.legend span:before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;background:#83cbb5;margin-right:6px}.legend .fail:before{background:#d18875}.legend .missing:before{background:#37403c}.history-label{font-size:12px;color:#91a69c;margin-bottom:8px}footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;border-top:1px solid #2b3a33;padding-top:22px;margin-top:34px;color:#91a69c;font-size:12px}@media(max-width:600px){main{padding:28px 16px}header{margin-bottom:28px}.service{padding:18px}.bars{gap:2px}.calendar{grid-template-columns:repeat(30,1fr)}}
+</style>
 </head>
-<body>
-  <main>
-    <div class="brand">Autopilot</div>
-    <h1>This status monitor has been retired.</h1>
-    <p>This page no longer provides live service status or uptime history.</p>
-    <a href="https://app.aplt.ai">Open Autopilot</a>
-    <p class="date">Retired 12 October 2026</p>
-  </main>
-</body>
-</html>
+<body><main>
+<header><a class="brand" href="https://app.aplt.ai">Autopilot</a><a href="https://app.aplt.ai">Open app ↗</a></header>
+<section id="summary" class="unknown" aria-live="polite"><h1 id="headline">Checking service status…</h1><p id="updated">Waiting for the independent monitor.</p></section>
+<div class="controls"><h2>Service availability</h2><nav aria-label="History range"><button data-hours="24" aria-pressed="true">24 hours</button><button data-hours="168" aria-pressed="false">7 days</button><button data-hours="720" aria-pressed="false">30 days</button></nav></div>
+<div id="services"></div>
+<div class="legend"><span>Passing checks</span><span class="fail">Failed checks</span><span class="missing">No checks / incomplete coverage</span></div>
+<p class="note">Checks run once a minute from an independent Cloudflare monitor. They confirm public service reachability; they do not test sign-in, database operations or every application feature. Gaps are unknown, not successful checks. History refreshes every five minutes.</p>
+<footer><span>Independent monitoring · Cloudflare + GitHub Pages</span><span id="historyUpdated">History begins when the new monitor starts.</span></footer>
+</main>
+<script>
+const API='https://uptime-api.aplt.ai/status';
+const DEFINITIONS=[{id:'app',name:'Autopilot app',description:'Public app health endpoint'},{id:'sign',name:'Signing',description:'Public signing health endpoint'},{id:'docs',name:'Documentation',description:'Public documentation site'}];
+let snapshot=null,hours=24,fetchFailed=false,restartsAt=null;
+const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node};
+const ago=ms=>{const n=Math.max(0,Math.floor(ms/60000));return n<1?'just now':`${n} minute${n===1?'':'s'} ago`};
+function bucketClass(up,total,expected){return total===0?'':`${up===total?'up':up===0?'down':'partial'}${total<expected?' gap':''}`}
+function draw(){
+ const now=Date.now(),stale=!snapshot||now-Date.parse(snapshot.checkedAt)>180000;
+ const fresh=DEFINITIONS.every(t=>{const row=snapshot?.targets.find(r=>r.target_id===t.id);return row&&now-row.minute*60000<=180000});
+ const allUp=!fetchFailed&&!stale&&fresh&&snapshot.targets.every(r=>r.ok===1);
+ const unavailable=fetchFailed||stale||!fresh;
+ document.getElementById('summary').className=unavailable?'unknown':allUp?'':'down';
+ document.getElementById('headline').textContent=unavailable?'Status currently unknown':allUp?'All monitored services reachable':'A service is not responding';
+ document.getElementById('updated').textContent=snapshot?`Last check ${ago(now-Date.parse(snapshot.checkedAt))}${unavailable?' · monitoring data is unavailable or out of date':''}`:restartsAt?`Monitoring starts ${new Date(restartsAt).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}, after the old monitor’s daily allowance resets.`:'The monitor has not provided a status snapshot yet.';
+ const container=document.getElementById('services');container.replaceChildren();
+ const endHour=Math.floor((snapshot?Date.parse(snapshot.checkedAt):now)/3600000)*60;
+ const groupHours=hours===720?8:hours===168?2:1;
+ for(const t of DEFINITIONS){
+  const row=snapshot?.targets.find(r=>r.target_id===t.id);
+  const unknown=fetchFailed||!row||now-row.minute*60000>180000;
+  const card=el('section','service'),heading=el('div','service-head');
+  heading.append(el('h3','',t.name));const badge=el('span',`badge ${unknown?'':row.ok?'up':'down'}`);badge.append(el('span','dot'),el('span','',unknown?'Unknown':row.ok?'Reachable':'Unavailable'));heading.append(badge);card.append(heading);
+  card.append(el('p','detail',`${t.description}${row&&!unknown?` · ${row.latency_ms} ms`:''}`));
+  const bars=el('div','bars');let totalChecks=0,passing=0;
+  for(let i=0;i<hours/groupHours;i++){
+   const start=endHour-(hours-1)*60+i*groupHours*60;
+   const rows=(snapshot?.hourly??[]).filter(r=>r.target_id===t.id&&r.bucket>=start&&r.bucket<start+groupHours*60);
+   const total=rows.reduce((n,r)=>n+r.total,0),up=rows.reduce((n,r)=>n+r.up,0);totalChecks+=total;passing+=up;
+   const bar=el('div',`bar ${bucketClass(up,total,groupHours*60)}`);bar.title=`${new Date(start*60000).toLocaleString()}: ${up} passing / ${total} recorded checks; up to ${groupHours*60} expected`;bars.append(bar);
+  }
+  bars.setAttribute('role','img');bars.setAttribute('aria-label',`${hours}-hour history: ${passing} passing checks out of ${totalChecks} recorded checks. Gaps are unknown.`);card.append(bars);
+  const axis=el('div','axis');axis.append(el('span','',hours===24?'24 hours ago':hours===168?'7 days ago':'30 days ago'),el('span','',totalChecks?`${(passing/totalChecks*100).toFixed(2)}% of recorded checks passed`:'No recorded checks'),el('span','','Now'));card.append(axis);
+  card.append(el('div','history-label','Daily history · last 90 days (UTC)'));
+  const calendar=el('div','calendar');
+  const today=Math.floor(now/86400000)*1440;
+  for(let i=89;i>=0;i--){const day=today-i*1440,r=snapshot?.daily.find(r=>r.target_id===t.id&&r.bucket===day);const cell=el('div',`day ${bucketClass(r?.up??0,r?.total??0,1440)}`);cell.title=`${new Date(day*60000).toISOString().slice(0,10)}: ${r?`${r.up} passing / ${r.total} recorded checks`:'No checks'}; up to 1440 expected`;calendar.append(cell)}
+  calendar.setAttribute('role','img');calendar.setAttribute('aria-label','Daily check coverage for the last 90 days. Missing checks are unknown.');card.append(calendar);container.append(card);
+ }
+ document.getElementById('historyUpdated').textContent=snapshot?`History updated ${ago(now-Date.parse(snapshot.historyUpdatedAt))}`:'History begins when the new monitor starts.';
+}
+async function load(){if(document.hidden)return;try{const response=await fetch(API,{signal:AbortSignal.timeout(12000)});if(!response.ok){const error=await response.json().catch(()=>({}));restartsAt=error.startsAt??null;throw Error('Unavailable')}const data=await response.json();if(!Array.isArray(data.targets)||!Array.isArray(data.hourly)||!Array.isArray(data.daily)||!Number.isFinite(Date.parse(data.checkedAt)))throw Error('Invalid snapshot');snapshot=data;fetchFailed=false;restartsAt=null}catch{fetchFailed=true}draw()}
+document.querySelectorAll('[data-hours]').forEach(button=>button.addEventListener('click',()=>{hours=Number(button.dataset.hours);document.querySelectorAll('[data-hours]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));draw()}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});draw();load();setInterval(load,60000);setInterval(draw,15000);
+</script></body></html>

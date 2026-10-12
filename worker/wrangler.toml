@@ -1,16 +1,21 @@
 name = "autopilot-uptime"
 main = "src/index.ts"
 compatibility_date = "2026-01-15"
+account_id = "d0525d53f111e4f76936be14c633621e"
 workers_dev = false
-
-# Retired on 2026-10-12. Keep all invocation paths disabled.
 preview_urls = false
-routes = []
+routes = [
+  { pattern = "uptime-api.aplt.ai", custom_domain = true }
+]
+
+# The retired monitor exhausted the account allowance on 12 October.
+# This one-time gate makes no D1 calls before the next midnight UTC reset.
+[vars]
+MONITOR_START_AT = "2026-10-13T00:00:00Z"
 
 [triggers]
-crons = []
+crons = ["* * * * *"]
 
-# D1 database — bound as `env.DB` in the Worker.
 [[d1_databases]]
 binding = "DB"
 database_name = "autopilot-uptime"
