@@ -304,7 +304,9 @@ export function StatusPage() {
                 : "No history available yet."}
           </p>
         </div>
-        <footer className="docs-footer">
+      </main>
+      <footer className="docs-footer">
+        <div className="docs-footer-inner">
           <div className="docs-footer-copy">
             <p>© {year} Autopilot. All rights reserved.</p>
             <p>Made in Aotearoa, New Zealand</p>
@@ -316,8 +318,8 @@ export function StatusPage() {
               </a>
             ))}
           </div>
-        </footer>
-      </main>
+        </div>
+      </footer>
     </>
   );
 }

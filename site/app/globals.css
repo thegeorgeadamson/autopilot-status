@@ -155,6 +155,10 @@
 }
 .docs-footer {
   border-top: 1px solid var(--border);
+}
+.docs-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
   padding: 28px 40px;
   display: flex;
   align-items: center;
@@ -214,7 +218,7 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  .docs-footer {
+  .docs-footer-inner {
     padding: 24px 20px;
     align-items: flex-start;
     flex-direction: column;
