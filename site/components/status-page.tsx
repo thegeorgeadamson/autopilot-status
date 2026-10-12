@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { HeaderMetric } from "@/components/reports/header-metric";
+import { ChartMetricTabs } from "@/components/reports/charts/ChartMetricTabs";
+import { SettingsSection } from "@/components/shell/SettingsSection";
+import { Badge } from "@/components/ui/badge";
 import { LogoMark } from "@/components/brand/LogoMark";
 import {
   SERVICES,
@@ -148,156 +150,184 @@ export function StatusPage() {
     : down
       ? "Some services are unavailable"
       : "All listed services are available";
+  const updated = demo
+    ? "Example service status · simulated data"
+    : snapshot
+      ? `Last updated ${ago(now - Date.parse(snapshot.checkedAt))}${unknown ? " · current status unavailable" : ""}`
+      : startsAt
+        ? `Status updates resume ${new Date(startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`
+        : clock === null
+          ? "Loading the latest updates…"
+          : "The latest status is temporarily unavailable. Please check back soon.";
   return (
     <>
-      <main>
-        <header>
+      <main className="status-shell">
+        <header className="status-header">
           <a
             className="brand"
             href="https://app.aplt.ai"
             aria-label="Autopilot home"
           >
-            <LogoMark className="size-[25px]" />
-            <span className="brand-label">
-              Autopilot<span>Status</span>
+            <LogoMark className="size-6" />
+            <span className="font-semibold tracking-tight">Autopilot</span>
+            <span className="border-l border-border pl-3 text-xs font-normal text-muted-foreground">
+              Status
             </span>
           </a>
-          <a href="https://app.aplt.ai" className="open-app">
+          <a
+            href="https://app.aplt.ai"
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
             Open Autopilot ↗
           </a>
         </header>
-        {demo && (
-          <aside className="demo-banner">
-            <strong>Local preview · simulated data</strong>
-            <p>
-              40 days of example performance, including slow periods, outages
-              and gaps. This is not live service status.
+        <div className="status-content">
+          <div className="page-heading">
+            <p className="text-sm text-muted-foreground">Autopilot</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              Service status
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Availability and performance across our services.
             </p>
-            <div className="demo-options" aria-label="Demo scenario">
-              {scenarios.map((s) => (
-                <Button
+          </div>
+          {demo && (
+            <aside className="demo-preview">
+              <HeaderMetric
+                tone="sky"
+                label="Local preview · simulated data"
+                value="40 days of example history"
+                detail="Includes healthy periods, outages and gaps. This is not live service status."
+              />
+              <div className="demo-picker">
+                <ChartMetricTabs
+                  value={scenario}
+                  onChange={setScenario}
+                  label="Demo scenario"
+                  options={scenarios.map((s) => ({
+                    value: s.id,
+                    label: s.label,
+                  }))}
+                />
+              </div>
+            </aside>
+          )}
+          <section className="status-overview" aria-live="polite">
+            <HeaderMetric
+              tone={unknown ? "sky" : down ? "red" : "emerald"}
+              label="Current status"
+              value={headline}
+              detail={updated}
+            />
+          </section>
+          <SettingsSection
+            title="Services"
+            trailing={
+              <ChartMetricTabs
+                label="History range"
+                value={String(hours)}
+                onChange={(v) => setHours(Number(v))}
+                options={[
+                  ...ranges,
+                  ...(demo ? [{ hours: 960, label: "40 days" }] : []),
+                ].map((r) => ({ value: String(r.hours), label: r.label }))}
+              />
+            }
+          >
+            <div className="divide-y divide-border">
+              {items.map((s) => (
+                <article
                   key={s.id}
-                  variant={scenario === s.id ? "outline" : "ghost"}
-                  size="sm"
-                  aria-pressed={scenario === s.id}
-                  onClick={() => setScenario(s.id)}
+                  aria-labelledby={`service-${s.id}`}
+                  className="grid min-w-0 gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[160px_minmax(0,1fr)]"
                 >
-                  {s.label}
-                </Button>
+                  <div className="service-info">
+                    <div>
+                      <h2
+                        id={`service-${s.id}`}
+                        className="text-[13px] font-semibold"
+                      >
+                        {s.name}
+                      </h2>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {s.description}
+                      </p>
+                    </div>
+                    <div className="availability-metric">
+                      <p className="text-xs text-muted-foreground">
+                        Observed availability
+                      </p>
+                      <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+                        {s.summary.availability === null
+                          ? "—"
+                          : `${s.summary.availability.toFixed(2)}%`}
+                      </p>
+                    </div>
+                    <Badge
+                      size="md"
+                      tone={
+                        s.status === "up"
+                          ? "emerald"
+                          : s.status === "down"
+                            ? "red"
+                            : "neutral"
+                      }
+                      className="w-fit rounded-lg px-2.5 py-1.5 font-normal"
+                    >
+                      <span className="size-1.5 rounded-full bg-current" />
+                      {s.status === "unknown"
+                        ? "Awaiting updates"
+                        : s.status === "up"
+                          ? "Available"
+                          : "Unavailable"}
+                    </Badge>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="chart-caption">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Response time
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Average for the selected period
+                        </p>
+                      </div>
+                      <Badge
+                        tone="sky"
+                        size="md"
+                        className="rounded-full px-2.5 py-1.5 font-medium tabular-nums"
+                      >
+                        {s.summary.ms === null
+                          ? "—"
+                          : `${Math.round(s.summary.ms).toLocaleString()} ms`}
+                      </Badge>
+                    </div>
+                    {s.summary.total ? (
+                      <Chart buckets={s.buckets} hours={hours} name={s.name} />
+                    ) : (
+                      <div className="empty-history">
+                        <p className="text-sm font-medium">
+                          No performance history yet
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Updates will appear here as they become available.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </article>
               ))}
             </div>
-          </aside>
-        )}
-        <section
-          id="summary"
-          className={unknown ? "unknown" : down ? "down" : ""}
-          aria-live="polite"
-        >
-          <h1>{headline}</h1>
-          <p id="updated">
+          </SettingsSection>
+          <p className="mt-4 text-right text-[11px] text-muted-foreground">
             {demo
-              ? "Example service status · simulated data"
+              ? "40-day demo · not live monitoring"
               : snapshot
-                ? `Last updated ${ago(now - Date.parse(snapshot.checkedAt))}${unknown ? " · current status unavailable" : ""}`
-                : startsAt
-                  ? `Status updates resume ${new Date(startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`
-                  : clock === null
-                    ? "Loading the latest updates…"
-                    : "The latest status is temporarily unavailable. Please check back soon."}
+                ? `History updated ${ago(now - Date.parse(snapshot.historyUpdatedAt))}`
+                : "No history available yet."}
           </p>
-        </section>
-        <div className="controls">
-          <h2>Service availability</h2>
-          <div
-            className="range-control"
-            role="group"
-            aria-label="History range"
-          >
-            {[
-              ...ranges,
-              ...(demo ? [{ hours: 960, label: "40 days" }] : []),
-            ].map((r) => (
-              <Button
-                key={r.hours}
-                variant="ghost"
-                size="sm"
-                className={hours === r.hours ? "range-active" : ""}
-                aria-pressed={hours === r.hours}
-                onClick={() => setHours(r.hours)}
-              >
-                {r.label}
-              </Button>
-            ))}
-          </div>
         </div>
-        <Card className="services gap-0 py-0 bg-white ring-0 border border-border">
-          <CardContent className="px-0">
-            {items.map((s) => (
-              <section
-                className="service"
-                key={s.id}
-                aria-labelledby={`service-${s.id}`}
-              >
-                <CardHeader className="service-head">
-                  <div>
-                    <h3 id={`service-${s.id}`}>{s.name}</h3>
-                    <span className="service-description">{s.description}</span>
-                  </div>
-                  <span className={`badge ${s.status}`}>
-                    <span className="dot" />
-                    {s.status === "unknown"
-                      ? "Awaiting updates"
-                      : s.status === "up"
-                        ? "Available"
-                        : "Unavailable"}
-                  </span>
-                  <div className="availability">
-                    <strong>
-                      {s.summary.availability === null
-                        ? "—"
-                        : `${s.summary.availability.toFixed(2)}%`}
-                    </strong>
-                    <span>Observed availability</span>
-                  </div>
-                </CardHeader>
-                <div className="history">
-                  {s.summary.total ? (
-                    <>
-                      <div className="chart-heading">
-                        <span>Average response time · lower is better</span>
-                        <strong>
-                          {Math.round(s.summary.ms!).toLocaleString()} ms
-                        </strong>
-                      </div>
-                      <div className="mobile-availability">
-                        {s.summary.availability!.toFixed(2)}% observed
-                        availability
-                      </div>
-                      <Chart buckets={s.buckets} hours={hours} name={s.name} />
-                    </>
-                  ) : (
-                    <div className="empty-history">
-                      <strong>No performance history yet</strong>
-                      <span>
-                        Updates will appear here as they become available.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </section>
-            ))}
-          </CardContent>
-        </Card>
-        <div id="historyUpdated">
-          {demo
-            ? "40-day demo · not live monitoring"
-            : snapshot
-              ? `History updated ${ago(now - Date.parse(snapshot.historyUpdatedAt))}`
-              : "No history available yet."}
-        </div>
-      </main>
-      <footer className="docs-footer">
-        <div className="docs-footer-inner">
+        <footer className="docs-footer">
           <div className="docs-footer-copy">
             <p>© {year} Autopilot. All rights reserved.</p>
             <p>Made in Aotearoa, New Zealand</p>
@@ -309,8 +339,8 @@ export function StatusPage() {
               </a>
             ))}
           </div>
-        </div>
-      </footer>
+        </footer>
+      </main>
     </>
   );
 }

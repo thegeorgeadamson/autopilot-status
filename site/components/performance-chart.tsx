@@ -1,10 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
 import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
-import {
-  tooltipShell,
-  tooltipRow,
-} from "@/components/evilcharts/ui/echarts-tooltip";
+import { renderToStaticMarkup } from "react-dom/server";
+import { TooltipSurface } from "@/components/ui/tooltip-surface";
 import { MarkAreaComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import type { Bucket } from "@/lib/status";
@@ -64,32 +62,19 @@ export default function PerformanceChart({
         hour: "numeric",
         minute: "2-digit",
       });
-      const rows = b.total
-        ? tooltipRow({
-            indicatorHtml:
-              '<span style="width:7px;height:7px;border-radius:50%;background:#61b99c"></span>',
-            labelText: "Response time",
-            valueText: duration(b.ms!),
-            dimmed: "",
-          }) +
-          tooltipRow({
-            indicatorHtml: "",
-            labelText:
-              b.up === b.total
-                ? "Available"
-                : b.up === 0
-                  ? "Unavailable"
-                  : "Intermittent",
-            valueText: `${((b.up / b.total) * 100).toFixed(2)}%`,
-            dimmed: "",
-          })
-        : "<span>No data for this period</span>";
-      return tooltipShell({
-        label,
-        body: `<div class="text-muted-foreground mb-2">${time} · ${hours >= 720 ? 8 : hours === 168 ? 2 : 1}-hour average</div>${rows}`,
-        roundness: "xl",
-        variant: "default",
-      });
+      return renderToStaticMarkup(
+        <TooltipSurface>
+          <p className="font-medium">{label}</p>
+          <p className="mt-0.5 text-muted-foreground">
+            {b.total
+              ? `${duration(b.ms!)} average · ${((b.up / b.total) * 100).toFixed(2)}% available`
+              : "No data for this period"}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {time} · {hours >= 720 ? 8 : hours === 168 ? 2 : 1}-hour period
+          </p>
+        </TooltipSurface>,
+      );
     };
     const baseSeries = {
       type: "line",
@@ -97,7 +82,8 @@ export default function PerformanceChart({
       symbol: "circle",
       symbolSize: 7,
       connectNulls: false,
-      smooth: false,
+      smooth: 0.35,
+      smoothMonotone: "x",
       animation: false,
       emphasis: { focus: "none", scale: true },
     };
@@ -116,10 +102,15 @@ export default function PerformanceChart({
           fontSize: 10,
           interval: Math.max(1, Math.floor(data.length / 4)),
           formatter: (v: string) =>
-            new Date(Number(v) * 60000).toLocaleDateString(undefined, {
-              day: "numeric",
-              month: "short",
-            }),
+            hours === 24
+              ? new Date(Number(v) * 60000).toLocaleTimeString(undefined, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : new Date(Number(v) * 60000).toLocaleDateString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                }),
         },
       },
       yAxis: {
@@ -133,7 +124,10 @@ export default function PerformanceChart({
         axisLabel: {
           color: "#9699a0",
           fontSize: 10,
-          formatter: (v: number) => duration(back(v)),
+          formatter: (v: number) =>
+            compressed && v !== 0 && Math.abs(v - forward(ceiling)) > 0.001
+              ? ""
+              : duration(back(v)),
         },
         splitLine: { lineStyle: { color: "#f0f0f2", type: "solid" } },
       },
@@ -222,11 +216,11 @@ export default function PerformanceChart({
     >
       <EChartsLineChart
         renderer="svg"
-        className="h-[200px] w-full"
+        className="h-[180px] w-full"
         data={data}
         config={config}
         animation={false}
-        curveType="linear"
+        curveType="monotone"
         chartOptions={options}
       >
         <EChartsLineChart.Grid />

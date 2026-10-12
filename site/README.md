@@ -25,12 +25,21 @@ cover loaded charts, tooltip content, scenario/range switching and small screens
 
 ## Shared UI and charts
 
-`components/ui/{button,button-variants,card}.tsx` (variants uses `.ts`) and
-`components/brand/LogoMark.tsx` were copied from the corresponding Autopilot files
-on 12 October 2026 (checkout HEAD `908aabf9a4a60ab0083e7bd6b0ab8b491a23b744`).
-They are standalone copies so the public status site has no app/backend dependencies.
-Typography and light-theme tokens match Autopilot. Sync these files deliberately
-when the product design changes; they are not an automatically linked workspace package.
+The public layout now follows the current daily sales report. Components were copied
+from Autopilot main commit `06f94af009a4227951358cf79b0ee686bf100773` on 12 October 2026:
+
+- `HeaderMetric` is the exact report summary component, extracted from
+  `src/features/reports/daily-summary/DailySummaryView.tsx` with only an export added.
+- `SettingsSection` supplies the same grouped, rounded row container used by the report.
+  Service rows adapt its `ChannelReportBlock` grid to service metrics and charts.
+- `ChartMetricTabs` is the exact targets overview picker, with time-range options.
+- `Badge`, `badge-styles` and `TooltipSurface` are copied unchanged. ECharts tooltips
+  render the actual `TooltipSurface` through React's static markup renderer; this is
+  the same surface used by the profile activity tooltip.
+
+The previous standalone button, card and logo copies remain available. These local
+copies do not import the production app or its backend, and are not an automatically
+linked workspace package. Sync deliberately when product design changes.
 
 `components/evilcharts/` contains Evil Charts' ECharts line chart, chart base,
 active dot, tooltip, legend and brush components, downloaded from the official
@@ -39,6 +48,7 @@ were changed to local aliases. The upstream MIT license is retained in that dire
 See https://evilcharts.com/docs/echarts/components and its line-chart documentation.
 The performance component supplies a chartOptions override for gaps, affected periods,
 units and tooltip content through the library's supported option escape hatch.
+Lines use monotone smoothing and preserve unknown gaps.
 Large timeout spikes use a clearly labelled compressed display scale; tooltips and
 summary values retain real milliseconds and recorded-check availability.
 
