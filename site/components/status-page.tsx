@@ -5,7 +5,7 @@ import { HeaderMetric } from "@/components/reports/header-metric";
 import { ChartMetricTabs } from "@/components/reports/charts/ChartMetricTabs";
 import { SettingsSection } from "@/components/shell/SettingsSection";
 import { Badge } from "@/components/ui/badge";
-import { LogoMark } from "@/components/brand/LogoMark";
+import { DocsNav } from "@/components/layout/DocsNav";
 import {
   SERVICES,
   aggregate,
@@ -161,26 +161,8 @@ export function StatusPage() {
           : "The latest status is temporarily unavailable. Please check back soon.";
   return (
     <>
+      <DocsNav />
       <main className="status-shell">
-        <header className="status-header">
-          <a
-            className="brand"
-            href="https://app.aplt.ai"
-            aria-label="Autopilot home"
-          >
-            <LogoMark className="size-6" />
-            <span className="font-semibold tracking-tight">Autopilot</span>
-            <span className="border-l border-border pl-3 text-xs font-normal text-muted-foreground">
-              Status
-            </span>
-          </a>
-          <a
-            href="https://app.aplt.ai"
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            Open Autopilot ↗
-          </a>
-        </header>
         <div className="status-content">
           <div className="page-heading">
             <p className="text-sm text-muted-foreground">Autopilot</p>

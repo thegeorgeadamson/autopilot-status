@@ -59,3 +59,9 @@ Run `npm run export:pages` before publishing. Commit the reviewed source and gen
 `docs/` output together, then push main. GitHub Pages uses the existing main `/docs`
 source. A GitHub Actions export workflow is not configured: the available OAuth
 credential lacks workflow scope. No additional permission is needed for static exports.
+
+The status header adapts `DocsNav` and its light-mode CSS from the documentation
+site at `6f53433913050036f5544bc97663810eae1cca2c`. It retains the brand, centred
+Docs/Changelog/Legal navigation, Open app button, sticky glass treatment and mobile
+menu. Documentation links are absolute; article search and theme switching remain
+on the docs site. The status page stays in light mode.
