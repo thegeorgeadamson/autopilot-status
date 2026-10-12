@@ -53,8 +53,8 @@ The worst-history test produces a roughly 188 KiB snapshot, below D1's row size 
 
 The page refreshes once a minute while visible. Data older than three minutes and
 failed API requests show Unknown. Missing samples stay unknown; percentages explicitly
-refer to recorded checks. The 24-hour, 7-day and 30-day views and 90-day calendar use
-only the published snapshot. Old Supabase/Companion history is not relabelled as AWS data.
+refer to recorded checks. The 24-hour, 7-day and 30-day performance views use
+only the published snapshot. Missing periods appear as gaps rather than healthy data. Old Supabase/Companion history is not relabelled as AWS data.
 
 The existing encrypted `DISCORD_WEBHOOK_URL` is retained. Operational alerts require
 three consecutive failed minute checks; recovery follows an alerted failure streak.
@@ -83,14 +83,17 @@ The Worker can start from empty replacement tables. Its retained database is
 `65b5ad4b-5b4d-4347-abdf-195863de72e5` in account
 `d0525d53f111e4f76936be14c633621e`.
 
-Deploy the reviewed Worker with `npx wrangler deploy`; publish `docs/` by pushing the
-reviewed source to main. GitHub Pages must show the same commit as its completed build.
+Deploy the reviewed Worker with `npx wrangler deploy`. The React frontend in `site/`
+is exported statically into `docs/` with `npm run export:pages`, then published by
+the existing GitHub Pages main `/docs` source. See `site/README.md` for local development and the loopback-only demo.
+GitHub Pages must show the same commit as its completed deployment.
 Verify the public `/status` response, current target timestamps, row metrics, CPU/error
 metrics and cached reads after the quota reset; browser rendering alone is insufficient.
 
 ## Stop / rollback
 
 If needed, set `crons = []`, `routes = []`, `workers_dev = false`, `preview_urls = false`
-and deploy. Keep the database and versions. Replace `docs/index.html` with the retirement
-notice from commit `376fabc` and publish it. Do not restore the old Worker code, schedule
+and deploy. Keep the database and versions. To retire the public page, replace the React page with a retirement notice and
+export it into `docs/` and publish main. The previous notice is in `docs/index.html`
+at commit `376fabc`. Do not restore the old Worker code, schedule
 or legacy history queries. No AWS infrastructure or application release is part of this.

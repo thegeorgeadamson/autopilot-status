@@ -3,3 +3,7 @@ node_modules
 .env
 .env.local
 *.log
+
+site/.next/
+site/out/
+site/*.tsbuildinfo
