@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { TooltipSurface } from "@/components/ui/tooltip-surface";
 import { MarkAreaComponent } from "echarts/components";
 import * as echarts from "echarts/core";
-import { smoothTrend, type Bucket } from "@/lib/status";
+import type { Bucket } from "@/lib/status";
 echarts.use([MarkAreaComponent]);
 const config = {
   response: { label: "Response time", colors: { light: ["#61b99c"] } },
@@ -35,10 +35,9 @@ export default function PerformanceChart({
     const compressed = ceiling > 1000,
       forward = (ms: number) => (compressed ? Math.log1p(ms / 100) : ms),
       back = (v: number) => (compressed ? Math.expm1(v) * 100 : v);
-    const trend = smoothTrend(buckets);
-    const data = buckets.map((b, index) => ({
+    const data = buckets.map((b) => ({
       time: String(b.start),
-      response: trend[index] === null ? null : forward(trend[index]!),
+      response: b.ms === null ? null : forward(b.ms),
     }));
     const affected = buckets.map((b, i) =>
       b.total &&
@@ -83,8 +82,7 @@ export default function PerformanceChart({
       symbol: "circle",
       symbolSize: 7,
       connectNulls: false,
-      smooth: 0.35,
-      smoothMonotone: "x",
+      smooth: false,
       animation: false,
       emphasis: { focus: "none", scale: true },
     };
@@ -152,7 +150,7 @@ export default function PerformanceChart({
           ...baseSeries,
           name: "Response time",
           data: data.map((d) => d.response),
-          lineStyle: { color: "#61b99c", width: 2 },
+          lineStyle: { color: "#61b99c", width: 1.5 },
           itemStyle: { color: "#61b99c", borderColor: "#fff", borderWidth: 2 },
           areaStyle: {
             color: {
@@ -162,7 +160,7 @@ export default function PerformanceChart({
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: "rgba(97,185,156,.18)" },
+                { offset: 0, color: "rgba(97,185,156,.10)" },
                 { offset: 1, color: "rgba(97,185,156,.02)" },
               ],
             },
@@ -186,7 +184,7 @@ export default function PerformanceChart({
           ...baseSeries,
           name: "Affected periods",
           data: affected,
-          lineStyle: { color: "#ce8e62", width: 2 },
+          lineStyle: { color: "#ce8e62", width: 1.5 },
           itemStyle: { color: "#ce8e62", borderColor: "#fff", borderWidth: 2 },
         },
       ],
@@ -221,7 +219,7 @@ export default function PerformanceChart({
         data={data}
         config={config}
         animation={false}
-        curveType="monotone"
+        curveType="linear"
         chartOptions={options}
       >
         <EChartsLineChart.Grid />
@@ -230,7 +228,7 @@ export default function PerformanceChart({
         <EChartsLineChart.Tooltip roundness="xl" />
         <EChartsLineChart.Line
           dataKey="response"
-          strokeWidth={2}
+          strokeWidth={1.5}
           connectNulls={false}
         >
           <EChartsLineChart.ActiveDot variant="colored-border" />

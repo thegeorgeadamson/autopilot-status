@@ -119,22 +119,3 @@ export function currentStatus(
       ? "up"
       : "down";
 }
-
-// A quiet visual trend. Missing and unavailable periods keep their exact values,
-// and healthy values never borrow across those boundaries. Hover uses raw buckets.
-export function smoothTrend(buckets: Bucket[]): (number | null)[] {
-  return buckets.map((bucket, index) => {
-    if (bucket.ms === null || bucket.up < bucket.total) return bucket.ms;
-    let weighted = bucket.ms * bucket.total * 4,
-      weight = bucket.total * 4;
-    for (const direction of [-1, 1])
-      for (let step = 1; step <= 3; step++) {
-        const next = buckets[index + direction * step];
-        if (!next || next.ms === null || next.up < next.total) break;
-        const w = (4 - step) * next.total;
-        weighted += next.ms * w;
-        weight += w;
-      }
-    return weighted / weight;
-  });
-}

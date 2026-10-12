@@ -286,7 +286,7 @@ export function StatusPage() {
                           Response time
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          Smoothed trend · hover for recorded values
+                          Average for the selected period
                         </p>
                       </div>
                       <Badge

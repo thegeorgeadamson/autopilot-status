@@ -7,11 +7,20 @@ export function makeDemo(
   const hourly: Hour[] = [];
   const end = Math.floor(now / 3600000) * 60;
   SERVICES.forEach((t, k) => {
+    let seed = (k + 1) * 104729,
+      drift = 0;
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
     for (let i = 959; i >= 0; i--) {
       if (scenario !== "healthy" && t.id === "app" && i >= 416 && i < 432)
         continue;
+      drift = Math.max(-12, Math.min(12, drift + (random() - 0.5) * 2));
       let up = 60,
-        ms = 110 + k * 38 + 18 * Math.sin(i * 0.17) + 12 * Math.sin(i * 0.047);
+        ms = 110 + k * 38 + drift + (random() - 0.5) * 16;
+      if ([137 + k * 11, 521 - k * 13, 733 + k * 7].includes(i))
+        ms += 160 + k * 35;
       if (scenario !== "healthy") {
         if (
           t.id === "app" &&
