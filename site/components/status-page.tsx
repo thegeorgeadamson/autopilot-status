@@ -197,7 +197,7 @@ export function StatusPage() {
           )}
           <section className="status-overview" aria-live="polite">
             <HeaderMetric
-              tone={unknown ? "sky" : down ? "red" : "emerald"}
+              tone={unknown ? "sky" : down ? "red" : transient ? "amber" : "emerald"}
               label="Current status"
               value={headline}
               detail={updated}
