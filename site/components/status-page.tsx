@@ -296,7 +296,7 @@ export function StatusPage() {
             </div>
           </SettingsSection>
           <p className="mt-4 text-[11px] text-muted-foreground">
-            Successful checks measure public reachability, not guaranteed customer uptime. Failed checks are retried twice; recovered attempts remain recorded. Older history uses the original single-attempt checks.
+            Availability is based on regular service checks, including sign-in and workspace access.
           </p>
           {!demo && snapshot?.independent && (
             <p className="mt-2 text-[11px] text-muted-foreground">
