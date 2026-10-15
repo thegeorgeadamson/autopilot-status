@@ -108,3 +108,17 @@ test("production daily summaries are accepted without latency", () => {
   assert.equal(currentStatus(snapshot, "app", now), "up");
   assert.equal(summarize(aggregate(snapshot, "app", 24, now)).ms, 325);
 });
+
+test("badge distinguishes loading, stale data and retry recovery", async () => {
+  const { statusLabel } = await import('../lib/status.ts');
+  assert.equal(statusLabel(null, 'app', now, false, true), 'Checking…');
+  assert.equal(statusLabel(base, 'app', now), 'Available');
+  assert.equal(statusLabel(base, 'app', now + 181000), 'Updates delayed');
+  assert.equal(statusLabel(base, 'app', now, true), 'Update unavailable');
+  const transient = {...base,targets:base.targets.map(r=>({...r,probe:{outcome:'transient' as const,attempts:[]}}))};
+  assert.equal(currentStatus(transient,'app',now),'degraded');
+  assert.equal(statusLabel(transient,'app',now),'Retry succeeded');
+  const down = {...base,targets:base.targets.map(r=>({...r,ok:0}))};
+  assert.equal(statusLabel(down,'app',now),'Connection issue');
+  assert.equal(statusLabel({...down,independent:{checkedAt:base.checkedAt,targets:[{target_id:'app',ok:0}],browser:{status:'passed'}}},'app',now),'Unavailable · two checks');
+});

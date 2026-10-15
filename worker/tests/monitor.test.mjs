@@ -8,6 +8,7 @@ function database() {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(readFileSync('migrations/0001_initial.sql','utf8'));
   sqlite.exec(readFileSync('migrations/0002_bounded_monitor.sql','utf8'));
+  sqlite.exec(readFileSync('migrations/0003_monitor_evidence.sql','utf8'));
   const queries=[];
   const db={ prepare(sql) {
     assert(!/\bchecks\b/.test(sql), 'Retained legacy history must never be queried');

@@ -1,4 +1,6 @@
-interface Env { DB: D1Database; DISCORD_WEBHOOK_URL?: string; MONITOR_START_AT?: string; }
+import { probe } from "./probe.ts";
+import { ingestIndependent } from "./independent.ts";
+interface Env { DB: D1Database; DISCORD_WEBHOOK_URL?: string; MONITOR_START_AT?: string; INDEPENDENT_CHECK_KEY?: string; }
 export const TARGETS = [
   { id: 'app', name: 'Autopilot app', url: 'https://app.aplt.ai/api/health', status: 204 },
   { id: 'sign', name: 'Signing', url: 'https://sign.aplt.ai/api/health', status: 204 },
@@ -13,18 +15,6 @@ const MINUTE = 60_000;
 const DAY = 1440;
 const STALE_MS = 3 * MINUTE;
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS' };
-
-async function check(t: typeof TARGETS[number]): Promise<{ ok: number; latency_ms: number; status_code: number | null }> {
-  const start = Date.now();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10_000);
-  try {
-    const response = await fetch(t.url, { method: 'HEAD', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'AutopilotUptime/2.0 (+https://status.aplt.ai)' } });
-    return { ok: Number(response.status === t.status), latency_ms: Date.now() - start, status_code: response.status };
-  } catch {
-    return { ok: 0, latency_ms: Date.now() - start, status_code: null };
-  } finally { clearTimeout(timer); }
-}
 
 // Exported so tests exercise the exact production queries against real SQLite.
 export function resultStatements(db: D1Database, row: Current): D1PreparedStatement[] {
@@ -54,17 +44,18 @@ export async function runChecks(env: Env, scheduledTime: number): Promise<void> 
   if (Date.now() - scheduledTime > STALE_MS) return;
   const previous = (await env.DB.prepare('SELECT * FROM monitor_current').all<Current>()).results;
   if (TARGETS.every(t => (previous.find(p => p.target_id === t.id)?.minute ?? -1) >= minute)) return;
-  const results = await Promise.all(TARGETS.map(check));
+  const results = await Promise.all(TARGETS.map(t => probe(t)));
   const rows = TARGETS.map((t, i): Current => {
     const prior = previous.find(p => p.target_id === t.id);
     // A monitoring gap breaks a consecutive failure streak.
     const consecutive = prior?.minute === minute - 1;
     return { target_id: t.id, minute, ...results[i]!, failure_streak: results[i]!.ok ? 0 : (consecutive ? prior!.failure_streak : 0) + 1 };
   });
-  const committed = await env.DB.batch(rows.flatMap(row => resultStatements(env.DB, row)));
+  const committed = await env.DB.batch([...rows.flatMap(row => resultStatements(env.DB, row)), ...rows.map((row, i) => env.DB.prepare('INSERT OR IGNORE INTO monitor_evidence VALUES (?, ?, ?)').bind(minute, row.target_id, JSON.stringify({ outcome: results[i]!.outcome, attempts: results[i]!.attempts })))]);
   // Retain seven days of raw samples. Ordered primary keys bound cleanup work.
   if (minute % 60 === 0) {
     await env.DB.batch([
+      env.DB.prepare('DELETE FROM monitor_evidence WHERE minute < ?').bind(minute - 7 * DAY),
       env.DB.prepare('DELETE FROM monitor_recent WHERE minute < ?').bind(minute - 7 * DAY),
       env.DB.prepare('DELETE FROM monitor_hourly WHERE bucket < ?').bind(Math.floor(minute / 60) * 60 - 30 * DAY),
       env.DB.prepare('DELETE FROM monitor_daily WHERE bucket < ?').bind(Math.floor(minute / DAY) * DAY - 180 * DAY),
@@ -98,16 +89,20 @@ export async function publish(env: Env, minute: number): Promise<void> {
     snapshot = { checkedAt: '', targets: [], historyUpdatedAt: new Date(minute * MINUTE).toISOString(), recent: recent!.results as Recent[], hourly: hourly!.results as Hourly[], daily: daily!.results as Daily[] };
   }
   snapshot.checkedAt = new Date(Math.max(minute, ...current.map(row => row.minute)) * MINUTE).toISOString();
-  snapshot.targets = current.map(row => ({ ...row, name: TARGETS.find(t => t.id === row.target_id)?.name ?? row.target_id }));
+  const evidence = (await env.DB.prepare('SELECT target_id, payload FROM monitor_evidence WHERE minute = ?').bind(minute).all<{target_id: string; payload: string}>()).results;
+  const independent = await env.DB.prepare('SELECT payload FROM monitor_independent WHERE id = 1').first<{payload: string}>();
+  (snapshot as Snapshot & { independent: unknown }).independent = independent ? JSON.parse(independent.payload) : null;
+  snapshot.targets = current.map(row => ({ ...row, probe: evidence.find(e => e.target_id === row.target_id) ? JSON.parse(evidence.find(e => e.target_id === row.target_id)!.payload) : null, name: TARGETS.find(t => t.id === row.target_id)?.name ?? row.target_id }));
   await env.DB.prepare("INSERT INTO monitor_published VALUES (1, ?) ON CONFLICT (id) DO UPDATE SET payload = excluded.payload WHERE json_extract(excluded.payload, '$.checkedAt') >= json_extract(monitor_published.payload, '$.checkedAt')").bind(JSON.stringify(snapshot)).run();
 }
 
 function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': status === 200 ? 'public, max-age=60' : 'no-store' } });
+  return new Response(JSON.stringify(data), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': status === 200 ? 'public, max-age=20' : 'no-store' } });
 }
 export default {
   async scheduled(event: ScheduledController, env: Env): Promise<void> { await runChecks(env, event.scheduledTime); },
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    if (new URL(request.url).pathname === '/independent' && request.method === 'POST') return ingestIndependent(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: 'Method not allowed' }, 405);
     const url = new URL(request.url);
@@ -126,7 +121,7 @@ export default {
         return json({ error: 'Monitoring data is temporarily unavailable' }, 503);
       }
       if (!row) return json({ error: 'Monitoring has not started yet' }, 503);
-      response = new Response(row.payload, { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
+      response = new Response(row.payload, { headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20' } });
       ctx.waitUntil(caches.default.put(key, response.clone()));
     }
     return request.method === 'HEAD' ? new Response(null, { status: response.status, headers: response.headers }) : response;

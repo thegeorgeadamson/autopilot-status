@@ -97,3 +97,49 @@ and deploy. Keep the database and versions. To retire the public page, replace t
 export it into `docs/` and publish main. The previous notice is in `docs/index.html`
 at commit `376fabc`. Do not restore the old Worker code, schedule
 or legacy history queries. No AWS infrastructure or application release is part of this.
+
+## Reliability checks (16 October 2026)
+
+Each minute probe makes up to three HEAD requests, ten seconds per attempt, with
+two seconds between failed attempts. A recovered attempt is recorded as
+`transient`, retaining every attempt's HTTP result, timeout/network category,
+latency and AWS trace ID. A minute is unsuccessful only if all three attempts
+fail. Older historical percentages retain their original single-attempt meaning;
+the UI labels these percentages **Successful checks**, not customer uptime.
+Evidence is retained for seven days with indexed hourly cleanup. Existing
+three-minute operational alert thresholds remain; tests never send real alerts.
+
+The API edge cache lasts 20 seconds; browsers request fresh updates without a
+second cache layer. The badge distinguishes Checking, Available, Retry succeeded,
+Connection issue, Updates delayed and Update unavailable. Missing/stale data never
+becomes a healthy check. A near-contemporaneous failed independent observation
+(within 90 seconds of the primary sample, itself under three minutes old) can
+label a failure as **Unavailable · two checks**. Otherwise the page reports a
+connection issue without claiming a confirmed global outage.
+
+`.github/workflows/independent-monitor.yml` runs on a standard GitHub-hosted runner
+in this public repository, nominally every five minutes. GitHub schedules can be
+delayed, so this is an independent observation, not guaranteed instant failover or
+an on-demand confirmation of every failed primary request. The page marks reports
+older than 20 minutes as delayed. The job checks all three public endpoints and
+uses Chromium to sign in with password/TOTP, read the authenticated workspace API
+(which executes `auth_bridge.resolve_cognito_workspaces` against RDS), and render
+the isolated dashboard. It logs out before closing the browser. No customer
+records are read, created or modified by the recurring journey. Failed journeys
+fail the Actions run and publish a failed browser summary.
+
+Reports go to `/independent` with an HMAC-SHA256 signature over the exact body,
+using the `INDEPENDENT_CHECK_KEY` secret in both GitHub and Cloudflare. Ingestion
+bounds payload size, checks report freshness, strips extra fields, and prevents
+older/replayed reports from replacing newer observations. Raw credentials,
+sessions, screenshots, browser traces and database contents are never published.
+GitHub secrets `MONITOR_EMAIL`, `MONITOR_PASSWORD`, `MONITOR_TOTP` and
+`MONITOR_WORKSPACE_ID` belong only to an isolated synthetic dealership. The
+workflow has read-only repository permissions and runs only on main's schedule or
+explicit dispatch, never on pull requests.
+
+Apply `worker/migrations/0003_monitor_evidence.sql` before deploying the Worker.
+To stop the additional checker, disable its Actions workflow. To stop reporting,
+remove its shared secret. Retain the additive tables and prior history. No main
+application image, AWS service sizing, database schema, paid monitoring service,
+or infrastructure stack needs to change for this version.

@@ -11,6 +11,7 @@ import {
   aggregate,
   summarize,
   currentStatus,
+  statusLabel,
   parseSnapshot,
   type Snapshot,
 } from "@/lib/status";
@@ -72,6 +73,7 @@ export function StatusPage() {
       try {
         const res = await fetch("https://uptime-api.aplt.ai/status", {
           signal: active.signal,
+          cache: "no-store",
         });
         const data = await res.json();
         if (!res.ok) {
@@ -145,12 +147,13 @@ export function StatusPage() {
     status: currentStatus(snapshot, service.id, now, failed),
   }));
   const unknown = items.some((s) => s.status === "unknown"),
-    down = items.some((s) => s.status === "down");
+    down = items.some((s) => s.status === "down"),
+    transient = items.some((s) => s.status === "degraded");
   const headline = unknown
     ? "Status unavailable"
     : down
-      ? "Some services are unavailable"
-      : "All listed services are available";
+      ? "Some service checks are failing"
+      : transient ? "Services are responding after a retry" : "All listed services are available";
   const updated = demo
     ? "Example service status · simulated data"
     : snapshot
@@ -232,7 +235,7 @@ export function StatusPage() {
                     </div>
                     <div className="availability-metric">
                       <p className="text-xs text-muted-foreground">
-                        Observed availability
+                        Successful checks
                       </p>
                       <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
                         {s.summary.availability === null
@@ -245,18 +248,14 @@ export function StatusPage() {
                       tone={
                         s.status === "up"
                           ? "emerald"
-                          : s.status === "down"
-                            ? "red"
+                          : s.status === "down" || s.status === "degraded"
+                            ? "amber"
                             : "neutral"
                       }
                       className="w-fit rounded-lg px-2.5 py-1.5 font-normal"
                     >
                       <span className="size-1.5 rounded-full bg-current" />
-                      {s.status === "unknown"
-                        ? "Awaiting updates"
-                        : s.status === "up"
-                          ? "Available"
-                          : "Unavailable"}
+                      {statusLabel(snapshot, s.id, now, failed, clock === null)}
                     </Badge>
                   </div>
                   <div className="min-w-0">
@@ -296,6 +295,15 @@ export function StatusPage() {
               ))}
             </div>
           </SettingsSection>
+          <p className="mt-4 text-[11px] text-muted-foreground">
+            Successful checks measure public reachability, not guaranteed customer uptime. Failed checks are retried twice; recovered attempts remain recorded. Older history uses the original single-attempt checks.
+          </p>
+          {!demo && snapshot?.independent && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Independent check: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.targets.every(t => t.ok === 1) ? "all services responding" : "connection issues detected"} · {ago(now - Date.parse(snapshot.independent.checkedAt))}.
+              {" "}Sign-in and workspace: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.browser.status === "passed" ? "passed" : snapshot.independent.browser.status === "failed" ? "check failed" : "not yet configured"}.
+            </p>
+          )}
           <p className="mt-4 text-right text-[11px] text-muted-foreground">
             {demo
               ? "40-day demo · not live monitoring"
