@@ -22,6 +22,7 @@ export async function ingestIndependent(request: Request, env: Env): Promise<Res
   if (!await crypto.subtle.verify('HMAC', key, bytes, encoder.encode(body))) return new Response('Unauthorized', { status: 401 });
   let data;
   try { data = JSON.parse(body); } catch { return new Response('Invalid report', { status: 400 }); }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return new Response('Invalid report', { status: 400 });
   const timestamp = Date.parse(data.checkedAt);
   if (!Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp) > 5 * 60000 ||
       !Array.isArray(data.targets) || data.targets.length !== 3 ||
