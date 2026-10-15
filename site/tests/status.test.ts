@@ -122,3 +122,12 @@ test("badge distinguishes loading, stale data and retry recovery", async () => {
   assert.equal(statusLabel(down,'app',now),'Connection issue');
   assert.equal(statusLabel({...down,independent:{checkedAt:base.checkedAt,targets:[{target_id:'app',ok:0}],browser:{status:'passed'}}},'app',now),'Unavailable · two checks');
 });
+
+test('fresh failed workspace check affects app status; stale reports do not override fresh reachability',async()=>{
+ const {statusLabel}=await import('../lib/status.ts');
+ const snapshot={...base,independent:{checkedAt:base.checkedAt,targets:[{target_id:'app',ok:1}],browser:{status:'failed' as const}}};
+ assert.equal(currentStatus(snapshot,'app',now),'degraded');
+ assert.equal(statusLabel(snapshot,'app',now),'Workspace check failed');
+ const old={...snapshot,independent:{...snapshot.independent,checkedAt:new Date(now-21*60000).toISOString()}};
+ assert.equal(currentStatus(old,'app',now),'up');
+});

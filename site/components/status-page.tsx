@@ -153,7 +153,7 @@ export function StatusPage() {
     ? "Status unavailable"
     : down
       ? "Some service checks are failing"
-      : transient ? "Services are responding after a retry" : "All listed services are available";
+      : transient ? "Some service checks need attention" : "All listed services are available";
   const updated = demo
     ? "Example service status · simulated data"
     : snapshot

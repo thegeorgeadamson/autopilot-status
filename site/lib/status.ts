@@ -126,6 +126,13 @@ export function summarize(buckets: Bucket[]) {
       : null,
   };
 }
+function independentIssue(snapshot: Snapshot | null, id: string, now: number): string | null {
+  const report = snapshot?.independent;
+  if (!report || !Number.isFinite(Date.parse(report.checkedAt)) || now - Date.parse(report.checkedAt) > 20 * 60000) return null;
+  if (id === "app" && report.browser.status === "failed") return "Workspace check failed";
+  if (report.targets.some(row => row.target_id === id && row.ok === 0)) return "Independent check failed";
+  return null;
+}
 export function currentStatus(
   snapshot: Snapshot | null,
   id: string,
@@ -139,14 +146,14 @@ export function currentStatus(
     now - Date.parse(snapshot!.checkedAt) > 180000
     ? "unknown"
     : row.ok === 1
-      ? row.probe?.outcome === "transient" ? "degraded" : "up"
+      ? row.probe?.outcome === "transient" || independentIssue(snapshot, id, now) ? "degraded" : "up"
       : "down";
 }
 
 export function statusLabel(snapshot: Snapshot | null, id: string, now: number, failed = false, loading = false): string {
   const status = currentStatus(snapshot, id, now, failed);
   if (status === "up") return "Available";
-  if (status === "degraded") return "Retry succeeded";
+  if (status === "degraded") return independentIssue(snapshot, id, now) ?? "Retry succeeded";
   if (status === "down") {
     const independent = snapshot?.independent;
     const row = snapshot?.targets.find(r => r.target_id === id);

@@ -126,7 +126,10 @@ uses Chromium to sign in with password/TOTP, read the authenticated workspace AP
 (which executes `auth_bridge.resolve_cognito_workspaces` against RDS), and render
 the isolated dashboard. It logs out before closing the browser. No customer
 records are read, created or modified by the recurring journey. Failed journeys
-fail the Actions run and publish a failed browser summary.
+fail the Actions run and publish a failed browser summary. A fresh failed browser
+or independent service check also puts the affected service in a needs-attention
+state. Each run verifies the primary monitor feed is under three minutes old; a
+stopped or stale primary monitor fails the independent job as well.
 
 Reports go to `/independent` with an HMAC-SHA256 signature over the exact body,
 using the `INDEPENDENT_CHECK_KEY` secret in both GitHub and Cloudflare. Ingestion
