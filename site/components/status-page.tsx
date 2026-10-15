@@ -295,22 +295,25 @@ export function StatusPage() {
               ))}
             </div>
           </SettingsSection>
-          <p className="mt-4 text-[11px] text-muted-foreground">
+          <div className="mt-4 flex flex-col gap-2 text-[11px] text-muted-foreground sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+          <p>
             Availability is based on regular service checks, including sign-in and workspace access.
           </p>
-          {!demo && snapshot?.independent && (
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Independent check: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.targets.every(t => t.ok === 1) ? "all services responding" : "connection issues detected"} · {ago(now - Date.parse(snapshot.independent.checkedAt))}.
-              {" "}Sign-in and workspace: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.browser.status === "passed" ? "passed" : snapshot.independent.browser.status === "failed" ? "check failed" : "not yet configured"}.
-            </p>
-          )}
-          <p className="mt-4 text-right text-[11px] text-muted-foreground">
+          <p className="shrink-0 sm:ml-auto sm:text-right">
             {demo
               ? "40-day demo · not live monitoring"
               : snapshot
                 ? `History updated ${ago(now - Date.parse(snapshot.historyUpdatedAt))}`
                 : "No history available yet."}
           </p>
+          </div>
+          {!demo && snapshot?.independent && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Independent check: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.targets.every(t => t.ok === 1) ? "all services responding" : "connection issues detected"} · {ago(now - Date.parse(snapshot.independent.checkedAt))}.
+              {" "}Sign-in and workspace: {now - Date.parse(snapshot.independent.checkedAt) > 20 * 60000 ? "updates delayed" : snapshot.independent.browser.status === "passed" ? "passed" : snapshot.independent.browser.status === "failed" ? "check failed" : "not yet configured"}.
+            </p>
+          )}
+
         </div>
       </main>
       <footer className="docs-footer">
