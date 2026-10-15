@@ -266,7 +266,7 @@ export function StatusPage() {
                           Response time
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          Average for the selected period
+                          {hours === 2160 ? "Response times retained for 30 days" : "Average for the selected period"}
                         </p>
                       </div>
                       <Badge

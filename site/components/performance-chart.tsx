@@ -68,7 +68,7 @@ export default function PerformanceChart({
           <p className="font-medium">{label}</p>
           <p className="mt-0.5 text-muted-foreground">
             {b.total
-              ? `${duration(b.ms!)} average · ${((b.up / b.total) * 100).toFixed(2)}% available`
+              ? `${b.ms === null ? "Response time not retained" : `${duration(b.ms)} average`} · ${((b.up / b.total) * 100).toFixed(2)}% available`
               : "No data for this period"}
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -250,7 +250,7 @@ export default function PerformanceChart({
         <div className="keyboard-detail" role="status">
           {new Date(b.start * 60000).toLocaleString()}:{" "}
           {b.total
-            ? `${duration(b.ms!)} average response time · ${((b.up / b.total) * 100).toFixed(2)}% available`
+            ? `${b.ms === null ? "Response time not retained" : `${duration(b.ms)} average response time`} · ${((b.up / b.total) * 100).toFixed(2)}% available`
             : "No data"}
         </div>
       )}

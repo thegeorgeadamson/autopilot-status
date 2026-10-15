@@ -86,18 +86,25 @@ test("invalid metrics cannot enter chart formatting", () => {
   assert.equal(parseSnapshot(base), base);
 });
 
-test("90 days uses daily summaries once, with missing days and weighted metrics", () => {
+test("production daily summaries are accepted without latency", () => {
   const today = Math.floor(now / 86400000) * 1440;
-  const row = (bucket: number, total: number, up: number, latency_sum: number) => ({target_id: "app", bucket, total, up, latency_sum});
+  const day = (bucket: number, total: number, up: number) => ({target_id: "app", bucket, total, up});
   const snapshot = parseSnapshot({...base,
-    hourly: [row(today, 60, 60, 600000)],
-    daily: [row(today - 90 * 1440, 100, 0, 100000), row(today - 89 * 1440, 60, 30, 6000), row(today, 20, 20, 20000)],
+    hourly: [
+      {...day(today, 20, 20), latency_sum: 20000},
+      {...day(today - 60, 60, 30), latency_sum: 6000},
+    ],
+    daily: [day(today - 90 * 1440, 100, 0), day(today - 89 * 1440, 60, 30), day(today - 1440, 60, 30), day(today, 20, 20)],
   });
   const buckets = aggregate(snapshot, "app", 2160, now);
   assert.equal(buckets.length, 90);
-  assert.equal(buckets[0].ms, 100);
+  assert.equal(buckets[0].total, 60);
+  assert.equal(buckets[0].ms, null);
   assert.equal(buckets[1].ms, null);
   assert.equal(buckets.at(-1)!.ms, 1000);
-  assert.deepEqual(summarize(buckets), {total: 80, availability: 62.5, ms: 325});
-  assert.throws(() => parseSnapshot({...base, daily: [row(today, 1, 2, 0)]}));
+  assert.deepEqual(summarize(buckets), {total: 140, availability: 80 / 140 * 100, ms: 325});
+  assert.throws(() => parseSnapshot({...base, daily: [day(today, 1, 2)]}));
+  assert.throws(() => parseSnapshot({...base, hourly: [day(today, 1, 1)]}));
+  assert.equal(currentStatus(snapshot, "app", now), "up");
+  assert.equal(summarize(aggregate(snapshot, "app", 24, now)).ms, 325);
 });
