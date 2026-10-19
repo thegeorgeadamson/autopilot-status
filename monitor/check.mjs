@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { chromium } from 'playwright';
 import { probe } from '../worker/src/probe.ts';
+import { monitorBrowserCookie } from './browser-recognition.mjs';
 const origin='https://app.aplt.ai';
 const targets=await Promise.all([
  {target_id:'app',url:origin+'/api/health',status:204},
@@ -16,7 +17,10 @@ let browserStatus='not_configured';
 if(process.env.MONITOR_EMAIL&&process.env.MONITOR_PASSWORD&&process.env.MONITOR_WORKSPACE_ID&&process.env.MONITOR_TOTP){
  let browser, context, stage='launch';
  try{
-  browser=await chromium.launch();context=await browser.newContext();const page=await context.newPage();page.setDefaultTimeout(30000);
+  const recognition=monitorBrowserCookie(origin,process.env.MONITOR_EMAIL,process.env.INDEPENDENT_CHECK_KEY);
+  browser=await chromium.launch();context=await browser.newContext();
+  await context.addCookies([recognition]);
+  const page=await context.newPage();page.setDefaultTimeout(30000);
   stage='login';await page.goto(origin+'/login',{waitUntil:'domcontentloaded'});
   await page.getByLabel('Email',{exact:true}).fill(process.env.MONITOR_EMAIL);
   await page.getByLabel('Password',{exact:true}).fill(process.env.MONITOR_PASSWORD);
