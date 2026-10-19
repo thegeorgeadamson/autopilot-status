@@ -126,7 +126,16 @@ uses Chromium to sign in with password/TOTP, read the authenticated workspace AP
 (which executes `auth_bridge.resolve_cognito_workspaces` against RDS), and render
 the isolated dashboard. It logs out before closing the browser. No customer
 records are read, created or modified by the recurring journey. Failed journeys
-fail the Actions run and publish a failed browser summary. A fresh failed browser
+fail the Actions run and publish a failed browser summary.
+
+The monitor supplies a stable browser-recognition cookie derived from its existing
+report-signing secret, origin and monitoring account. This suppresses repeated
+new-browser emails after the first successful run. It grants no authentication;
+every run still completes password/TOTP login and logs out. No session or MFA
+cookies are retained. Rotating the secret or changing the account creates a new
+recognition identity and may send one further notice.
+
+A fresh failed browser
 or independent service check also puts the affected service in a needs-attention
 state. Each run verifies the primary monitor feed is under three minutes old; a
 stopped or stale primary monitor fails the independent job as well.
