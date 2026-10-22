@@ -29,12 +29,18 @@ if(process.env.MONITOR_EMAIL&&process.env.MONITOR_PASSWORD&&process.env.MONITOR_
    const allowedError=['incorrect_code','expired_code','expired','authentication_failed','unavailable','rate_limit','csrf_invalid'];
    console.log(JSON.stringify({stage:'auth-response',path:new URL(response.url()).pathname,status:response.status(),elapsed_ms:Date.now()-started,next:allowedNext.includes(result.next)?result.next:undefined,error:allowedError.includes(result.error)?result.error:result.error?'other':undefined}));
   });
-  stage='login';await page.goto(origin+'/login',{waitUntil:'domcontentloaded'});
+  stage='login-ready';await page.goto(origin+'/login',{waitUntil:'domcontentloaded'});
+  // Inputs can be filled before hydration, then cleared when React takes over.
+  await page.locator('form[data-auth-ready="true"]').waitFor();
+  stage='login';
   await page.getByLabel('Email',{exact:true}).fill(process.env.MONITOR_EMAIL);
   await page.getByLabel('Password',{exact:true}).fill(process.env.MONITOR_PASSWORD);
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  stage='mfa';console.log(JSON.stringify({stage:'mfa-start',code_remaining_ms:30000-Date.now()%30000}));await page.getByLabel('Authenticator code',{exact:true}).fill(totp(process.env.MONITOR_TOTP));
+  stage='mfa-form';const codeInput=page.getByLabel('Authenticator code',{exact:true});
+  await codeInput.waitFor();
+  stage='mfa-code';await codeInput.fill(totp(process.env.MONITOR_TOTP));
   await page.getByRole('button',{name:'Verify code',exact:true}).click();
+  stage='mfa-redirect';
   await page.waitForURL(url=>url.origin===origin&&!url.pathname.startsWith('/login'),{timeout:45000});
   stage='workspace';const workspace=await context.request.get(origin+'/api/auth/workspaces/cognito');
   if(workspace.status()!==200)throw Error('workspace read failed');
