@@ -155,3 +155,10 @@ To stop the additional checker, disable its Actions workflow. To stop reporting,
 remove its shared secret. Retain the additive tables and prior history. No main
 application image, AWS service sizing, database schema, paid monitoring service,
 or infrastructure stack needs to change for this version.
+
+The browser journey waits for the login form’s `data-auth-ready="true"` signal
+before filling credentials. Server-rendered inputs are editable before React
+hydrates; filling them earlier can lose both values during hydration and produce
+a misleading MFA timeout without a login request. MFA form readiness and redirect
+failures are logged as separate stages. Authentication diagnostics include only
+HTTP status and allowlisted step/error labels, never credentials or response bodies.

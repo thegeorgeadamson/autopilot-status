@@ -21,12 +21,26 @@ if(process.env.MONITOR_EMAIL&&process.env.MONITOR_PASSWORD&&process.env.MONITOR_
   browser=await chromium.launch();context=await browser.newContext();
   await context.addCookies([recognition]);
   const page=await context.newPage();page.setDefaultTimeout(30000);
-  stage='login';await page.goto(origin+'/login',{waitUntil:'domcontentloaded'});
+  const started=Date.now();
+  page.on('response',async response=>{
+   if(!['/api/auth/login/cognito','/api/auth/challenge/cognito'].includes(new URL(response.url()).pathname)||response.request().method()!=='POST')return;
+   let result={};try{result=await response.json();}catch{}
+   const allowedNext=['totp','complete','mfa_setup','new_password','passkey'];
+   const allowedError=['incorrect_code','expired_code','expired','authentication_failed','unavailable','rate_limit','csrf_invalid'];
+   console.log(JSON.stringify({stage:'auth-response',path:new URL(response.url()).pathname,status:response.status(),elapsed_ms:Date.now()-started,next:allowedNext.includes(result.next)?result.next:undefined,error:allowedError.includes(result.error)?result.error:result.error?'other':undefined}));
+  });
+  stage='login-ready';await page.goto(origin+'/login',{waitUntil:'domcontentloaded'});
+  // Inputs can be filled before hydration, then cleared when React takes over.
+  await page.locator('form[data-auth-ready="true"]').waitFor();
+  stage='login';
   await page.getByLabel('Email',{exact:true}).fill(process.env.MONITOR_EMAIL);
   await page.getByLabel('Password',{exact:true}).fill(process.env.MONITOR_PASSWORD);
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  stage='mfa';await page.getByLabel('Authenticator code',{exact:true}).fill(totp(process.env.MONITOR_TOTP));
+  stage='mfa-form';const codeInput=page.getByLabel('Authenticator code',{exact:true});
+  await codeInput.waitFor();
+  stage='mfa-code';await codeInput.fill(totp(process.env.MONITOR_TOTP));
   await page.getByRole('button',{name:'Verify code',exact:true}).click();
+  stage='mfa-redirect';
   await page.waitForURL(url=>url.origin===origin&&!url.pathname.startsWith('/login'),{timeout:45000});
   stage='workspace';const workspace=await context.request.get(origin+'/api/auth/workspaces/cognito');
   if(workspace.status()!==200)throw Error('workspace read failed');
@@ -41,7 +55,7 @@ if(process.env.MONITOR_EMAIL&&process.env.MONITOR_PASSWORD&&process.env.MONITOR_
   if(/something went wrong|application error|couldn.t load|access denied|service unavailable/i.test(text))throw Error('dashboard rendered error');
   if(!text.trim())throw Error('empty dashboard');
   browserStatus='passed';
- }catch{browserStatus='failed';console.error(`Synthetic check failed at ${stage}; no credentials or page contents logged.`);}
+ }catch(error){browserStatus='failed';console.error(JSON.stringify({stage,error_type:['TimeoutError','Error'].includes(error?.name)?error.name:'other'}));console.error(`Synthetic check failed at ${stage}; no credentials or page contents logged.`);}
  finally{
   if(context){try{const csrf=(await context.cookies(origin)).find(c=>c.name==='__Host-aplt_csrf')?.value;if(csrf){const logout=await context.request.post(origin+'/api/auth/logout/cognito',{headers:{Origin:origin,'Sec-Fetch-Site':'same-origin','X-CSRF-Token':decodeURIComponent(csrf),'Content-Type':'application/json'},data:{}});if(logout.status()!==204){browserStatus='failed';console.error('Synthetic session logout failed');}}}catch{browserStatus='failed';}}
   if(browser)await browser.close();
